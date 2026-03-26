@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CD & LM | RELATÓRIOS</title>
+    
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap5.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <style>
+        :root { 
+            --primary: #CF035C; 
+            --bg: #f5f5f5; 
+            --card: #ffffff; 
+            --text: #333; 
+        }
+        
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background: var(--bg); 
+            color: var(--text); 
+            margin: 0; 
+            overflow-x: hidden;
+        }
+
+        header { 
+            background: var(--primary); 
+            color: white; 
+            padding: 15px 20px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .container-fluid { padding: 25px; }
+
+        .card-relatorio {
+            background: var(--card);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            border-top: 5px solid var(--primary);
+        }
+
+        .btn-voltar {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            text-decoration: none;
+            font-size: 14px;
+            transition: 0.3s;
+        }
+
+        .btn-voltar:hover { background: rgba(255,255,255,0.3); color: white; }
+
+        /* TABELA EM UMA LINHA SÓ (SEM QUEBRAS) */
+        .table td, .table th { 
+            white-space: nowrap !important; 
+            vertical-align: middle; 
+            text-align: center;
+            font-size: 12px;
+            padding: 10px 15px !important;
+        }
+
+        .table thead th { 
+            background: #f8f9fa;
+            border-bottom: 2px solid var(--primary) !important; 
+            color: #555; 
+            font-size: 11px; 
+            text-transform: uppercase; 
+        }
+        
+        /* ESTILOS DE CAMPOS */
+        .barcode-cli {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            color: var(--primary);
+            background: #fff0f6;
+            padding: 2px 6px;
+            border-radius: 4px;
+            border: 1px dashed var(--primary);
+        }
+
+        .doca-texto { font-weight: 700; color: #333; }
+
+        /* CORES DINÂMICAS EXPEDIÇÃO */
+        .status-ok { color: #28a745 !important; font-weight: bold; }
+        .status-pendente { color: #dc3545 !important; font-weight: bold; }
+
+        /* BOTÃO EXCEL */
+        .btn-excel { 
+            background-color: #1d6f42 !important; 
+            color: white !important; 
+            border: none !important; 
+            border-radius: 8px !important; 
+            font-weight: 600 !important;
+            padding: 6px 12px !important;
+            margin-right: 10px;
+        }
+        .btn-excel:hover { background-color: #145532 !important; }
+
+        .dataTables_filter input {
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 5px 10px;
+            outline: none;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div style="display: flex; align-items: center; gap: 15px;">
+        <a href="main.html" class="btn-voltar"><i class="material-icons">arrow_back</i> Menu</a>
+        <span style="font-weight: bold; letter-spacing: 1px; font-size: 18px;">CENTRAL DE RELATÓRIOS</span>
+    </div>
+    <span class="material-icons">analytics</span>
+</header>
+
+<div class="container-fluid">
+    <div class="card-relatorio">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h5 style="color: var(--primary); font-weight: bold; margin: 0;">Histórico de Bipagens</h5>
+            <button class="btn btn-sm btn-outline-secondary" onclick="carregarDados()">
+                <i class="material-icons" style="font-size: 18px; vertical-align: middle;">refresh</i> Atualizar
+            </button>
+        </div>
+
+        <div class="table-responsive">
+            <table id="tabelaDados" class="table table-hover w-100">
+                <thead>
+                    <tr>
+                        <th>DATA/HORA</th>
+                        <th>CARGA</th>
+                        <th>CÓDIGO CLIENTE</th> 
+                        <th>REMESSA</th>
+                        <th>NOTA FISCAL</th>
+                        <th>CLIENTE</th>
+                        <th>ID PALLET</th>
+                        <th>ENDEREÇO</th>
+                        <th>DOCA</th>
+                        <th>EXPEDIÇÃO</th>
+                    </tr>
+                </thead>
+                <tbody id="corpoTabela"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.7.0.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.bootstrap5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    const API = "http://127.0.0.1:8000";
+
+    async function carregarDados() {
+        try {
+            const response = await fetch(`${API}/relatorio-geral`);
+            const dados = await response.json();
+
+            if ($.fn.DataTable.isDataTable('#tabelaDados')) {
+                $('#tabelaDados').DataTable().destroy();
+            }
+
+            const corpo = document.getElementById('corpoTabela');
+            corpo.innerHTML = "";
+
+            dados.forEach(item => {
+                let nfLimpa = (item.NF || "").toString().replace("-100", "").trim();
+                let nfFormatada = nfLimpa !== "" && nfLimpa !== "-" && nfLimpa !== "nan" ? nfLimpa.padStart(9, '0') : "-";
+
+                // Lógica de Cores Expedição
+                let statusExp = (item.Expedicao || "-").toString().trim().toUpperCase();
+                let classeExp = (statusExp === "OK") ? "status-ok" : (statusExp === "-" ? "status-pendente" : "");
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="text-muted" style="font-size: 11px;">${item.DataHora || '-'}</td>
+                    <td><strong>${item.Carga || '-'}</strong></td>
+                    <td><span class="barcode-cli">${item.Codigo || '-'}</span></td>
+                    <td>${item.Remessa || '-'}</td>
+                    <td>${nfFormatada}</td>
+                    <td style="text-align: left;">${item.Cliente || '-'}</td>
+                    <td class="small text-secondary"><code>${item.Paletizacao || '-'}</code></td>
+                    <td>${item.Endereco || '-'}</td>
+                    <td class="doca-texto">${item.Doca || '-'}</td>
+                    <td class="${classeExp}">${statusExp}</td>
+                `;
+                corpo.appendChild(tr);
+            });
+
+            $('#tabelaDados').DataTable({
+                dom: '<"d-flex justify-content-between align-items-center mb-3"fB>rtip',
+                buttons: [
+                    {
+                        extend: 'excelHtml5',
+                        text: '<i class="material-icons" style="font-size:18px; vertical-align:middle">grid_on</i> Excel',
+                        className: 'btn-excel',
+                        title: 'Relatório Geral - CD & LM'
+                    }
+                ],
+                language: { url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/pt-BR.json' },
+                order: [[0, 'desc']], 
+                pageLength: 15,
+                scrollX: true,
+                columnDefs: [{ targets: "_all", defaultContent: "-" }]
+            });
+
+        } catch (e) {
+            console.error("Erro ao carregar:", e);
+        }
+    }
+
+    window.onload = carregarDados;
+</script>
+
+</body>
+</html>

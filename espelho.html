@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CD & LM | ESPELHO DE CARGA</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        :root { 
+            --primary: #CF035C; 
+            --bg: #f5f5f5; 
+            --card: #ffffff; 
+            --text: #333; 
+            --success: #27ae60; 
+        }
+        
+        body.dark-mode { 
+            --bg: #121212; 
+            --card: #1e1e1e; 
+            --text: #e0e0e0; 
+        }
+
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background: var(--bg); 
+            color: var(--text); 
+            margin: 0; 
+            transition: 0.3s; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+        }
+
+        header { 
+            background: var(--primary); 
+            color: white; 
+            padding: 10px 15px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            width: 100%;
+            box-sizing: border-box;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .toolbar {
+            width: 95%;
+            max-width: 800px;
+            background: var(--card);
+            margin: 15px 0;
+            padding: 10px;
+            border-radius: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            border-top: 4px solid var(--primary);
+        }
+
+        select {
+            padding: 10px;
+            border-radius: 8px;
+            border: 2px solid #ddd;
+            background: var(--card);
+            color: var(--text);
+            font-weight: bold;
+            flex-grow: 1;
+            outline: none;
+        }
+
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-transform: uppercase;
+            font-size: 11px;
+        }
+
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-secondary { background: #444; color: white; }
+        .btn-success { background: var(--success); color: white; }
+
+        /* Ajustes para folha única A4 */
+        .folha-a4 {
+            background: white;
+            width: 210mm;
+            height: 297mm; /* Altura fixa para controle de página */
+            padding: 10mm;
+            margin-bottom: 20px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+            color: black !important;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        .table-ache { 
+            width: 100%; 
+            border-collapse: collapse; 
+            border: 1.2px solid black; 
+            table-layout: fixed;
+        }
+        .table-ache td { border: 1px solid black; padding: 4px; text-align: center; font-size: 11px; }
+        
+        .header-top { text-align: left !important; font-weight: bold; font-size: 12px; }
+        .sub-header { font-size: 8px; text-align: left !important; line-height: 1.1; }
+        .title-row { background: #f0f0f0; font-weight: bold; font-size: 14px; padding: 6px !important; }
+        .label-gray { background: #f9f9f9; font-size: 8px; font-weight: bold; text-align: left !important; }
+        .main-value { font-size: 18px; font-weight: bold; padding: 10px !important; }
+        .col-header { background: #f0f0f0; font-weight: bold; font-size: 9px; }
+
+        .empty-row td { height: 22px; }
+
+        @media print {
+            @page { size: A4; margin: 0; }
+            body { background: white !important; margin: 0; padding: 0; }
+            header, .toolbar, .footer-tag { display: none !important; }
+            .folha-a4 { margin: 0; box-shadow: none; padding: 10mm; width: 210mm; height: 297mm; }
+        }
+
+        .footer-info { margin-top: 10px; font-size: 9px; font-style: italic; display: flex; justify-content: space-between; }
+        .footer-tag { text-align: center; margin: 10px 0; font-size: 10px; color: #888; }
+    </style>
+</head>
+<body id="main-body">
+
+<header>
+    <div style="display: flex; align-items: center; gap: 10px;">
+        <span class="material-icons" style="cursor:pointer" onclick="toggleDark()">brightness_4</span>
+        <span style="font-weight: bold; letter-spacing: 1px;">CD & LM | ESPELHO DE CARGA</span>
+    </div>
+    <span class="material-icons">description</span>
+</header>
+
+<div class="toolbar">
+    <button class="btn-secondary" onclick="window.history.back()">
+        <i class="material-icons">arrow_back</i> Voltar
+    </button>
+    
+    <select id="selectPallet">
+        <option value="">🔄 Carregando IDs...</option>
+    </select>
+
+    <button class="btn-primary" onclick="buscarDados()">
+        <i class="material-icons">visibility</i> Visualizar
+    </button>
+    
+    <button class="btn-success" onclick="window.print()">
+        <i class="material-icons">print</i> Imprimir
+    </button>
+</div>
+
+<div class="folha-a4" id="documento">
+    <table class="table-ache">
+        <tr>
+            <td colspan="3" class="header-top">ACHÉ LABORATÓRIOS FARMACÊUTICOS S.A.</td>
+        </tr>
+        <tr>
+            <td class="sub-header" style="width: 40%;">Categoria:<br><strong>REGISTRO DE QUALIDADE</strong></td>
+            <td class="sub-header" style="width: 30%;">Código:<br><strong>RQ-NEO-017</strong></td>
+            <td class="sub-header" style="width: 30%;">Revisão:<br><strong>01</strong></td>
+        </tr>
+        <tr>
+            <td colspan="3" class="title-row">DETALHAMENTO DE CARGA (ESPELHO)</td>
+        </tr>
+        <tr>
+            <td colspan="3" class="label-gray">CLIENTE / TIPO DE OPERAÇÃO:</td>
+        </tr>
+        <tr>
+            <td colspan="3" id="campoTipo" class="main-value">AGUARDANDO SELEÇÃO</td>
+        </tr>
+        <tr>
+            <td colspan="1" class="label-gray" style="width: 25%;">CARGA:</td>
+            <td colspan="2" class="label-gray" style="width: 75%;">ID PALLET:</td>
+        </tr>
+        <tr style="font-size: 16px; font-weight: bold;">
+            <td id="campoCarga">-</td>
+            <td colspan="2" id="campoID" style="word-break: break-all; font-size: 14px;">-</td>
+        </tr>
+        <tr class="col-header">
+            <td style="width: 35%;">NOTA FISCAL</td>
+            <td style="width: 45%;">REMESSA</td>
+            <td style="width: 20%;">VOLUME</td>
+        </tr>
+        <tbody id="corpoTabela">
+            </tbody>
+    </table>
+
+    <div class="footer-info">
+        <span>Documento gerado pelo sistema CD & LM Logistics</span>
+        <span id="dataGeracao">--/--/---- --:--</span>
+    </div>
+</div>
+
+<div class="footer-tag">DESENVOLVIDO POR MICAEL DUTRA</div>
+
+<script>
+    const API = "http://127.0.0.1:8000";
+
+    function toggleDark() { 
+        document.getElementById('main-body').classList.toggle('dark-mode'); 
+    }
+
+    async function init() {
+        const select = document.getElementById('selectPallet');
+        try {
+            const res = await fetch(`${API}/ids-para-espelho`);
+            const ids = await res.json();
+            select.innerHTML = '<option value="">Selecione o Pallet...</option>';
+            ids.forEach(id => {
+                const opt = document.createElement('option');
+                opt.value = id; opt.textContent = id;
+                select.appendChild(opt);
+            });
+        } catch (e) {
+            select.innerHTML = '<option value="">Erro ao carregar</option>';
+        }
+    }
+
+    async function buscarDados() {
+        const id = document.getElementById('selectPallet').value;
+        if(!id) return;
+
+        try {
+            const res = await fetch(`${API}/detalhes-pallet-especifico/${id}`);
+            const data = await res.json();
+
+            document.getElementById('campoTipo').innerText = data.tipo_operacao || "LAST MILE";
+            document.getElementById('campoCarga').innerText = data.carga;
+            document.getElementById('campoID').innerText = data.id_pallet;
+            document.getElementById('dataGeracao').innerText = new Date().toLocaleString('pt-BR');
+
+            const corpo = document.getElementById('corpoTabela');
+            corpo.innerHTML = "";
+
+            data.itens.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="font-weight: bold;">${item.nf}</td>
+                    <td>${item.remessa}</td>
+                    <td>${item.volume}</td>
+                `;
+                corpo.appendChild(tr);
+            });
+
+            // REDUZIDO: de 22 para 15 linhas vazias para garantir o ajuste em uma folha
+            const totalDesejado = 18; 
+            const preencher = totalDesejado - data.itens.length;
+            
+            for(let i = 0; i < preencher; i++) {
+                const tr = document.createElement('tr');
+                tr.className = "empty-row";
+                tr.innerHTML = '<td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>';
+                corpo.appendChild(tr);
+            }
+
+        } catch (e) {
+            alert("Erro ao buscar dados.");
+        }
+    }
+
+    init();
+</script>
+</body>
+</html>

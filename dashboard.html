@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CD & LM | BI (Business Intelligence)</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    
+    <style>
+        :root { --primary: #CF035C; --bg: #f4f6f9; --card: #ffffff; --secondary: #1a1a1a; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #333; margin: 0; overflow-x: hidden; }
+
+        header { 
+            background: var(--primary); color: white; padding: 8px 20px; 
+            display: flex; justify-content: space-between; align-items: center; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .container-fluid { padding: 10px 15px; }
+
+        /* Barra de Filtros Compacta */
+        .filter-bar {
+            background: var(--card); padding: 10px 15px; border-radius: 8px;
+            margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;
+        }
+        .filter-group { flex: 1; min-width: 120px; }
+        .filter-group label { font-size: 10px; font-weight: 800; color: #777; text-transform: uppercase; margin-bottom: 2px; }
+        .filter-group select, .filter-group input { 
+            width: 100%; border: 1px solid #ddd; border-radius: 5px; padding: 5px 8px; font-size: 12px; outline: none; 
+        }
+        .btn-filter { 
+            background: var(--primary); color: white; border: none; padding: 6px 15px; 
+            border-radius: 5px; font-weight: bold; font-size: 12px; cursor: pointer; height: 32px;
+        }
+
+        /* KPIs Menores */
+        .kpi-card {
+            background: var(--card); border-radius: 10px; padding: 12px 15px;
+            display: flex; align-items: center; justify-content: space-between;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02); height: 70px;
+        }
+        .kpi-value { font-size: 20px; font-weight: 800; margin: 0; color: var(--secondary); }
+        .kpi-label { color: #888; font-size: 10px; text-transform: uppercase; font-weight: 700; margin: 0; }
+        .kpi-icon { color: var(--primary); opacity: 0.7; font-size: 24px; }
+
+        /* Gráficos Ajustados */
+        .chart-box {
+            background: var(--card); border-radius: 10px; padding: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03); margin-bottom: 15px;
+        }
+        .chart-header {
+            font-size: 11px; font-weight: 700; color: #666; margin-bottom: 10px;
+            display: flex; align-items: center; gap: 5px; text-transform: uppercase;
+        }
+        canvas { max-height: 200px !important; } 
+    </style>
+</head>
+<body>
+
+<header>
+    <div style="display: flex; align-items: center; gap: 12px;">
+        <span style="font-weight: 700; font-size: 14px;">CD & LM | DASHBOARD OPERACIONAL</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px; font-size: 12px;">
+        <span id="relogio">00:00:00</span>
+        <i class="material-icons" style="font-size: 16px;">sensors</i>
+    </div>
+</header>
+
+<div class="container-fluid">
+    
+    <div class="filter-bar">
+        <div class="filter-group">
+            <label>Data</label>
+            <input type="date" id="f-data">
+        </div>
+        <div class="filter-group">
+            <label>Carga</label>
+            <select id="f-carga"><option value="">Todas</option></select>
+        </div>
+        <div class="filter-group">
+            <label>Região</label>
+            <select id="f-regiao"><option value="">Todas</option></select>
+        </div>
+        <div class="filter-group">
+            <label>Cliente</label>
+            <select id="f-cliente"><option value="">Todos</option></select>
+        </div>
+        <button class="btn-filter" onclick="atualizarDashboard()">FILTRAR</button>
+    </div>
+
+    <div class="row g-2 mb-3">
+        <div class="col-md-3">
+            <div class="kpi-card">
+                <div><p class="kpi-label">Bipagens</p><h3 class="kpi-value" id="kpi-total">0</h3></div>
+                <i class="material-icons kpi-icon">inventory_2</i>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="kpi-card">
+                <div><p class="kpi-label">Cargas</p><h3 class="kpi-value" id="kpi-cargas">0</h3></div>
+                <i class="material-icons kpi-icon">local_shipping</i>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="kpi-card">
+                <div><p class="kpi-label">Clientes</p><h3 class="kpi-value" id="kpi-clientes">0</h3></div>
+                <i class="material-icons kpi-icon">groups</i>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="kpi-card">
+                <div><p class="kpi-label">Média/h</p><h3 class="kpi-value" id="kpi-media">0</h3></div>
+                <i class="material-icons kpi-icon">speed</i>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-2">
+        <div class="col-md-4">
+            <div class="chart-box">
+                <div class="chart-header"><i class="material-icons" style="font-size:16px;">calendar_month</i>Por Dia</div>
+                <canvas id="chartDia"></canvas>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="chart-box">
+                <div class="chart-header"><i class="material-icons" style="font-size:16px;">schedule</i>Por Hora</div>
+                <canvas id="chartHora"></canvas>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="chart-box">
+                <div class="chart-header"><i class="material-icons" style="font-size:16px;">pie_chart</i>Regiões</div>
+                <canvas id="chartRegiao"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-2">
+        <div class="col-md-12">
+            <div class="chart-box" style="margin-bottom: 5px;">
+                <div class="chart-header"><i class="material-icons" style="font-size:16px;">person</i>Volume por Cliente (Top 10)</div>
+                <canvas id="chartClientes" style="max-height: 180px !important;"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API = "http://127.0.0.1:8000";
+    Chart.register(ChartDataLabels);
+    let charts = {};
+
+    setInterval(() => {
+        document.getElementById('relogio').innerText = new Date().toLocaleTimeString('pt-BR');
+    }, 1000);
+
+    const labelOptionsGeneral = {
+        anchor: 'end', align: 'top', color: '#444', font: { weight: 'bold', size: 10 },
+        offset: 4, formatter: (value) => value > 0 ? value : ''
+    };
+
+    async function carregarFiltros() {
+        try {
+            const res = await fetch(`${API}/get-filters`);
+            const data = await res.json();
+            const popular = (id, lista) => {
+                const sel = document.getElementById(id);
+                lista.forEach(item => {
+                    const opt = document.createElement('option');
+                    opt.value = item; opt.innerText = item;
+                    sel.appendChild(opt);
+                });
+            };
+            if(data.cargas) popular('f-carga', data.cargas);
+            if(data.regioes) popular('f-regiao', data.regioes);
+            if(data.clientes) popular('f-cliente', data.clientes);
+        } catch (e) {}
+    }
+
+    async function atualizarDashboard() {
+        const filtros = {
+            data: document.getElementById('f-data').value,
+            carga: document.getElementById('f-carga').value,
+            regiao: document.getElementById('f-regiao').value,
+            cliente: document.getElementById('f-cliente').value
+        };
+        const query = new URLSearchParams(filtros).toString();
+
+        try {
+            const res = await fetch(`${API}/dashboard-metrics?${query}`);
+            const data = await res.json();
+
+            document.getElementById('kpi-total').innerText = data.total_bipagens;
+            document.getElementById('kpi-cargas').innerText = data.total_cargas;
+            document.getElementById('kpi-clientes').innerText = data.total_clientes;
+            const h = Object.keys(data.producao_hora || {}).length || 1;
+            document.getElementById('kpi-media').innerText = Math.round(data.total_bipagens / h);
+
+            renderLinear('chartDia', data.producao_diaria, '#CF035C');
+            renderBarras('chartHora', data.producao_hora, '#2c3e50', 'x');
+            // Alterado para renderizar o nome dentro da barra
+            renderBarrasNomeDentro('chartClientes', data.top_clientes, '#CF035C', 'y');
+            renderPizza('chartRegiao', data.por_regiao);
+        } catch (e) {}
+    }
+
+    function renderLinear(id, obj, color) {
+        if(charts[id]) charts[id].destroy();
+        charts[id] = new Chart(document.getElementById(id), {
+            type: 'line',
+            data: {
+                labels: Object.keys(obj || {}),
+                datasets: [{ data: Object.values(obj || {}), borderColor: color, backgroundColor: 'rgba(207, 3, 92, 0.05)', fill: true, tension: 0.4, pointRadius: 3 }]
+            },
+            options: { 
+                layout: { padding: { top: 20 } },
+                plugins: { legend: { display: false }, datalabels: labelOptionsGeneral },
+                scales: { y: { display: false }, x: { grid: { display: false }, ticks: { font: { size: 10 } } } }
+            }
+        });
+    }
+
+    // Função de barras padrão (para o gráfico por hora)
+    function renderBarras(id, obj, color, eixo) {
+        if(charts[id]) charts[id].destroy();
+        charts[id] = new Chart(document.getElementById(id), {
+            type: 'bar',
+            data: {
+                labels: Object.keys(obj || {}),
+                datasets: [{ data: Object.values(obj || {}), backgroundColor: color, borderRadius: 4 }]
+            },
+            options: {
+                indexAxis: eixo,
+                layout: { padding: eixo === 'y' ? { right: 30 } : { top: 20 } },
+                plugins: { 
+                    legend: { display: false }, 
+                    datalabels: { ...labelOptionsGeneral, align: eixo === 'y' ? 'right' : 'top' } 
+                },
+                scales: { y: { display: false }, x: { display: false } }
+            }
+        });
+    }
+
+    // --- NOVA FUNÇÃO AJUSTADA PARA O GRÁFICO DE CLIENTES ---
+    // Coloca o nome (label) DENTRO da barra rosa.
+    function renderBarrasNomeDentro(id, obj, color, eixo) {
+        if(charts[id]) charts[id].destroy();
+        charts[id] = new Chart(document.getElementById(id), {
+            type: 'bar',
+            data: {
+                labels: Object.keys(obj || {}),
+                datasets: [{ data: Object.values(obj || {}), backgroundColor: color, borderRadius: 4 }]
+            },
+            options: {
+                indexAxis: eixo,
+                // Layout com padding apenas no topo, sem padding na direita
+                // para a barra rosa ocupar todo o espaço disponível.
+                layout: { padding: { top: 10, right: 10, bottom: 0, left: 10 } }, 
+                plugins: { 
+                    legend: { display: false }, 
+                    datalabels: {
+                        anchor: 'start', // Âncora o texto no início da barra
+                        align: 'end',    // Alinha o texto para a direita (para dentro)
+                        color: '#FFFFFF', // Cor do texto branca para contraste
+                        font: { weight: 'bold', size: 11 },
+                        offset: 10,      // Desloca o texto 10px para dentro
+                        textShadowColor: 'rgba(0, 0, 0, 0.5)', // Sombra para legibilidade
+                        textShadowBlur: 2,
+                        // Formata para mostrar o nome (label) em vez do valor numérico
+                        formatter: function(value, context) {
+                            return context.chart.data.labels[context.dataIndex];
+                        }
+                    }
+                },
+                scales: { 
+                    y: { 
+                        display: false, // Esconde o eixo Y original (com os nomes)
+                        grid: { display: false }
+                    }, 
+                    x: { 
+                        display: false, // Esconde o eixo X (valores)
+                        grid: { display: false }
+                    } 
+                }
+            }
+        });
+    }
+
+    function renderPizza(id, obj) {
+        if(charts[id]) charts[id].destroy();
+        charts[id] = new Chart(document.getElementById(id), {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(obj || {}),
+                datasets: [{ data: Object.values(obj || {}), backgroundColor: ['#CF035C', '#2c3e50', '#3498db', '#f1c40f', '#27ae60'] }]
+            },
+            options: {
+                cutout: '70%',
+                plugins: { 
+                    legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 9 } } },
+                    datalabels: { display: false }
+                }
+            }
+        });
+    }
+
+    window.onload = () => { carregarFiltros(); atualizarDashboard(); };
+</script>
+</body>
+</html>

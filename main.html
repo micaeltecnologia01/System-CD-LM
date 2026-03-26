@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CD & LM | MENU PRINCIPAL</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        :root { --primary: #CF035C; --bg: #f5f5f5; --card: #ffffff; --text: #333; --success: #27ae60; --warning: #f39c12; --danger: #e74c3c; }
+        body.dark-mode { --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; transition: 0.3s; overflow-x: hidden; }
+        
+        header { background: var(--primary); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .container { padding: 20px; max-width: 600px; margin: auto; }
+
+        .mascote-area { display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 20px; animation: float 3s ease-in-out infinite; }
+        .avatar { font-size: 60px; width: 85px; height: 85px; display: flex; align-items: center; justify-content: center; border-radius: 50%; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1)); transition: 0.3s transform; }
+        
+        .balao { background: var(--card); border: 2px solid var(--primary); padding: 12px 18px; border-radius: 15px 15px 15px 0; position: relative; max-width: 220px; box-shadow: 4px 4px 12px rgba(0,0,0,0.1); }
+        .balao::after { content: ''; position: absolute; left: -12px; bottom: -2px; border-style: solid; border-width: 12px 12px 0 0; border-color: var(--primary) transparent transparent transparent; }
+        .balao-texto { font-size: 13px; font-weight: bold; color: var(--text); margin: 0; line-height: 1.3; }
+
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+
+        .dash-card { background: var(--card); border-radius: 12px; padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center; margin-bottom: 25px; border-top: 5px solid var(--primary); }
+        .dash-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+        .dash-item span { display: block; font-size: 10px; color: #888; font-weight: bold; text-transform: uppercase; margin-bottom: 5px; }
+        .dash-item strong { font-size: 22px; color: var(--primary); }
+        
+        .progress-container { background: #eee; border-radius: 10px; height: 14px; width: 100%; overflow: hidden; margin: 18px 0; border: 1px solid #ddd; }
+        .progress-bar { background: var(--primary); height: 100%; width: 0%; transition: 1.5s cubic-bezier(0.1, 0, 0.3, 1); }
+
+        .estimativa-row { display: flex; justify-content: space-around; padding-top: 15px; border-top: 1px solid #eee; }
+        .est-item { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11px; font-weight: bold; color: #888; }
+        .est-item strong { font-size: 16px; color: var(--text); transition: 0.3s; }
+
+        /* Menu de Navegação */
+        .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .menu-btn { 
+            background: var(--card); border: 1px solid #ddd; border-radius: 12px; padding: 22px; 
+            text-align: center; cursor: pointer; text-decoration: none; color: var(--text); 
+            display: flex; flex-direction: column; align-items: center; gap: 12px; transition: 0.2s; 
+        }
+        .menu-btn:hover { border-color: var(--primary); transform: translateY(-4px); box-shadow: 0 6px 18px rgba(0,0,0,0.1); }
+        .menu-btn i { font-size: 38px; color: var(--primary); }
+        .menu-btn span { font-weight: bold; font-size: 13px; text-transform: uppercase; }
+
+        /* Modal */
+        .modal { display: none; position: fixed; z-index: 999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); }
+        .modal-content { background: var(--card); margin: 15% auto; padding: 25px; border-radius: 15px; width: 85%; max-width: 350px; position: relative; text-align: center; }
+        .form-group select { width: 100%; padding: 15px; border-radius: 8px; border: 2px solid #ddd; background: var(--card); color: var(--text); font-size: 16px; margin-bottom: 20px; outline: none; }
+        
+        .btn-start { width: 100%; padding: 16px; border-radius: 8px; border: none; background: #ccc; color: white; font-weight: bold; cursor: not-allowed; font-size: 16px; margin-bottom: 10px; transition: 0.3s; }
+        .btn-start.active { background: var(--primary); cursor: pointer; }
+        .btn-secondary { background: #444 !important; cursor: pointer !important; }
+        
+        .close-modal { position: absolute; right: 15px; top: 15px; cursor: pointer; color: #888; }
+        .footer { text-align: center; margin-top: 35px; font-size: 10px; color: #888; letter-spacing: 2px; opacity: 0.7; }
+    </style>
+</head>
+<body id="main-body">
+
+<header>
+    <div style="display: flex; align-items: center; gap: 10px;">
+        <span class="material-icons" style="cursor:pointer" onclick="toggleDark()">brightness_4</span>
+        <span style="font-weight: bold; letter-spacing: 1px;">CD & LM | LOGÍSTICS</span>
+    </div>
+    <span class="material-icons">account_circle</span>
+</header>
+
+<div class="container">
+    <div class="mascote-area">
+        <div id="mascote-avatar" class="avatar">😊</div>
+        <div class="balao">
+            <p id="mascote-msg" class="balao-texto">Equipamento OK? Então bora conferir essa carga!</p>
+        </div>
+    </div>
+
+    <div class="dash-card">
+        <div class="dash-grid">
+            <div class="dash-item"><span>Bipados</span><strong id="count-bipados">0</strong></div>
+            <div class="dash-item"><span>Meta</span><strong id="count-meta">4000</strong></div>
+            <div class="dash-item"><span>Progresso</span><strong id="count-percent">0%</strong></div>
+        </div>
+        <div class="progress-container"><div class="progress-bar" id="barra-progresso"></div></div>
+        <div class="estimativa-row">
+            <div class="est-item"><span>PROD/HORA</span><strong id="val-bph">0</strong></div>
+            <div class="est-item"><span>TEMPO ESTIMADO</span><strong id="val-tempo">--:--</strong></div>
+        </div>
+    </div>
+
+<div class="menu-grid">
+        <div class="menu-btn" onclick="abrirModal()">
+            <i class="material-icons">qr_code_scanner</i>
+            <span>Conferência</span>
+        </div>
+
+        <div class="menu-btn" onclick="abrirModalDoc()">
+            <i class="material-icons">description</i>
+            <span>Abrir CTO / RO</span>
+        </div>
+
+        <div class="menu-btn" onclick="window.location.href='espelho.html'">
+            <i class="material-icons">view_list</i>
+            <span>Espelho</span>
+        </div>
+
+        <div class="menu-btn" onclick="window.location.href='paletizacao.html'">
+            <i class="material-icons">inventory_2</i>
+            <span>Paletização</span>
+        </div>
+
+        <div class="menu-btn" onclick="window.location.href='armazenamento.html'">
+            <i class="material-icons">grid_view</i>
+            <span>Put-Away (Endereçamento)</span>
+        </div>
+
+        <div class="menu-btn" onclick="window.location.href='inventario.html'">
+            <i class="material-icons">fact_check</i>
+            <span>Inventário</span>
+        </div>
+
+        <div class="menu-btn" onclick="window.location.href='relatorios.html'">
+            <i class="material-icons">assessment</i>
+            <span>Relatórios</span>
+        </div>
+
+        <div class="menu-btn" onclick="window.location.href='dashboard.html'">
+            <i class="material-icons">trending_up</i>
+            <span>Dashboard</span>
+        </div>
+
+        <div class="menu-btn" onclick="window.location.href='ajustes.html'">
+            <i class="material-icons">settings</i>
+            <span>Ajustes</span>
+        </div>
+
+        <div class="menu-btn" onclick="toggleDark()">
+            <i class="material-icons">brightness_medium</i>
+            <span>Tema</span>
+        </div>
+    </div>
+
+    <div class="footer">ACHÉ LABORATÓRIO FARMACÊUTICO S.A | DESENVOLVIDO POR MICAEL DUTRA</div>
+</div>
+
+<div id="modalConf" class="modal">
+    <div class="modal-content">
+        <span class="material-icons close-modal" onclick="fecharModal()">close</span>
+        <h2>PROCESSO DE CONFERÊNCIA</h2>
+        <div class="form-group">
+            <select id="f-processo" onchange="validarForm()">
+                <option value="">Escolha uma opção...</option>
+                <option value="AUTOMACAO">Automação</option>
+                <option value="MANUAL">Manual</option>
+                <option value="FRACAO">Fração</option>
+            </select>
+        </div>
+        <button id="btnIniciar" class="btn-start" onclick="iniciarConferencia()" disabled>INICIAR CONFERÊNCIA</button>
+    </div>
+</div>
+
+<div id="modalDoc" class="modal">
+    <div class="modal-content">
+        <span class="material-icons close-modal" onclick="fecharModalDoc()">close</span>
+        <h2 style="color: var(--primary);">REGISTRO CTO</h2>
+        <p style="font-size: 12px; color: #888; margin-bottom: 20px;">Selecione o documento desejado:</p>
+        <button class="btn-start active" onclick="window.location.href='abrir-cto.html'">ABRIR CTO</button>
+    </div>
+</div>
+
+<script>
+    const API = "http://127.0.0.1:8000";
+    const inicioTurno = new Date();
+    inicioTurno.setHours(8, 0, 0); 
+    const fimTurno = new Date();
+    fimTurno.setHours(23, 59, 59);
+
+    function toggleDark() { document.getElementById('main-body').classList.toggle('dark-mode'); }
+    
+    // Funções Modal Conferência
+    function abrirModal() { document.getElementById('modalConf').style.display = 'block'; }
+    function fecharModal() { document.getElementById('modalConf').style.display = 'none'; }
+    
+    // Funções Modal Documentos (CTO/RO)
+    function abrirModalDoc() { document.getElementById('modalDoc').style.display = 'block'; }
+    function fecharModalDoc() { document.getElementById('modalDoc').style.display = 'none'; }
+
+    function validarForm() {
+        const processo = document.getElementById('f-processo').value;
+        const btn = document.getElementById('btnIniciar');
+        btn.classList.toggle('active', processo !== "");
+        btn.disabled = processo === "";
+    }
+
+    function abrirFormulario(tipo) {
+        alert("Abrindo formulário de " + tipo + "...");
+        // Exemplo: window.open('https://link-do-seu-sharepoint.com', '_blank');
+        fecharModalDoc();
+    }
+
+    function iniciarConferencia() {
+        const processo = document.getElementById('f-processo').value;
+        localStorage.setItem('processo_atual', processo);
+        window.location.href = (processo === "AUTOMACAO") ? "automacao.html" : "manual.html";
+    }
+
+    async function atualizarDash() {
+        try {
+            const r = await fetch(`${API}/produtividade`);
+            const d = await r.json();
+            const total = d.total_pallets || d.total || 0; 
+            const meta = 4000; 
+            const pct = (total / meta) * 100;
+            const agora = new Date();
+            let decorrido = (agora - inicioTurno) / (1000 * 60 * 60);
+            if (decorrido <= 0) decorrido = 0.01; 
+            const bph = Math.round(total / decorrido);
+            const falta = meta - total;
+
+            const avatar = document.getElementById('mascote-avatar');
+            const msg = document.getElementById('mascote-msg');
+            const barra = document.getElementById('barra-progresso');
+            const labelTempo = document.getElementById('val-tempo');
+
+            if (total >= meta) {
+                avatar.innerHTML = "🏆";
+                msg.innerText = "META BATIDA! Excelente trabalho hoje!";
+                barra.style.background = "var(--success)";
+            } else if (bph < 300) { 
+                avatar.innerHTML = "😨";
+                msg.innerText = "Ritmo muito lento! Precisamos focar mais";
+                barra.style.background = "var(--danger)";
+            } else {
+                avatar.innerHTML = "😊"; 
+                msg.innerText = "Ritmo bom! Mantendo assim você termina no prazo.";
+                barra.style.background = "var(--primary)";
+            }
+
+            document.getElementById('count-bipados').innerText = total;
+            document.getElementById('count-percent').innerText = pct.toFixed(1) + "%";
+            document.getElementById('barra-progresso').style.width = Math.min(pct, 100) + "%";
+            document.getElementById('val-bph').innerText = bph;
+            
+            if (bph > 0 && falta > 0) {
+                const horasFalta = falta / bph;
+                const h = Math.floor(horasFalta);
+                const m = Math.round((horasFalta - h) * 60);
+                labelTempo.innerText = `${h}h ${m}m`;
+                labelTempo.style.color = (new Date(agora.getTime() + (horasFalta * 3600000)) > fimTurno) ? "var(--danger)" : "var(--success)";
+            } else if (falta <= 0) {
+                labelTempo.innerText = "CONCLUÍDO!";
+                labelTempo.style.color = "var(--success)";
+            }
+
+        } catch(e) { console.log("Erro ao atualizar Dash..."); }
+    }
+
+    setInterval(atualizarDash, 10000);
+    atualizarDash();
+</script>
+
+</body>
+</html>

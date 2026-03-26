@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CD & LM | Paletização</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        :root { 
+            --primary: #CF035C; 
+            --bg: #f8f9fa; 
+            --card-bg: #ffffff; 
+            --text-main: #2d3436; 
+            --text-sub: #636e72; 
+            --success: #2ecc71; 
+            --accent: #0984e3; 
+            --border: #ddd;
+        }
+
+        body.dark-mode {
+            --bg: #121212;
+            --card-bg: #1e1e1e;
+            --text-main: #e0e0e0;
+            --text-sub: #b0b0b0;
+            --border: #333;
+        }
+
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text-main); margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; transition: 0.3s; }
+        
+        header { 
+            background: var(--primary); 
+            color: white; 
+            width: 100%; 
+            padding: 12px 20px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            box-sizing: border-box; 
+            position: sticky; 
+            top: 0; 
+            z-index: 100; 
+        }
+
+        .header-actions { display: flex; align-items: center; gap: 15px; }
+        .container { width: 95%; max-width: 550px; padding: 20px 0; }
+        
+        .card-input, .visor-carga { 
+            background: var(--card-bg); 
+            padding: 30px; 
+            border-radius: 20px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
+            text-align: center; 
+            margin-bottom: 25px; 
+        }
+
+        .input-carga { 
+            width: 80%; 
+            padding: 15px; 
+            border: 2px solid var(--border); 
+            background: var(--card-bg);
+            border-radius: 12px; 
+            font-size: 38px; 
+            text-align: center; 
+            color: var(--primary); 
+            font-weight: 800; 
+            outline: none; 
+        }
+
+        .visor-carga { display: none; text-align: left; animation: slideUp 0.4s ease; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .cliente-nome { font-size: 22px; font-weight: bold; color: var(--primary); border-bottom: 2px solid var(--primary); padding-bottom: 10px; margin-bottom: 15px; display: block; }
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        
+        .resumo-box { 
+            background: rgba(207, 3, 92, 0.05); 
+            padding: 20px; 
+            border-radius: 20px; 
+            text-align: center; 
+            margin: 20px 0; 
+            border: 1px dashed var(--primary); 
+        }
+
+        .card-pallet { 
+            background: var(--bg); 
+            padding: 15px; 
+            border-radius: 12px; 
+            margin-top: 10px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 8px; 
+            border: 1px solid var(--border);
+            border-left: 6px solid var(--success); 
+        }
+
+        .pallet-info-main { display: flex; justify-content: space-between; align-items: center; }
+        .pallet-tags { display: flex; gap: 10px; }
+        .tag { font-size: 11px; padding: 4px 10px; border-radius: 20px; color: white; font-weight: bold; display: flex; align-items: center; gap: 4px; }
+        .tag-vol { background: var(--primary); }
+        .tag-rem { background: var(--accent); }
+
+        .btn-imprimir-tudo { width: 100%; padding: 20px; background: var(--success); color: white; border: none; border-radius: 15px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 20px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .btn-icon { cursor: pointer; transition: 0.2s; padding: 5px; border-radius: 50%; } 
+        .btn-icon:hover { background: rgba(255,255,255,0.2); transform: scale(1.1); }
+    </style>
+</head>
+<body id="mainBody">
+
+<header>
+    <div style="display:flex; align-items:center; gap:10px;">
+        <span class="material-icons btn-icon" onclick="window.location.href='main.html'">arrow_back</span>
+        <strong>MENU</strong>
+    </div>
+    <div class="header-actions">
+        <span class="material-icons btn-icon" id="theme-icon" onclick="toggleTheme()">brightness_4</span>
+    </div>
+</header>
+
+<div class="container">
+    <div id="area-busca" class="card-input">
+        <label style="display:block; margin-bottom:15px; font-size:12px; font-weight:bold; color:var(--text-sub);">CARGA PARA PALETIZAÇÃO</label>
+        <input type="number" id="input-carga" class="input-carga" onkeypress="if(event.key==='Enter') buscarDados(this.value)" placeholder="000" autofocus>
+    </div>
+
+    <div id="visor" class="visor-carga">
+        <span class="cliente-nome" id="res-cliente">-</span>
+        <div class="info-row"><span>Carga:</span> <strong id="res-carga">-</strong></div>
+        <div class="info-row"><span>Região:</span> <strong id="res-destino">-</strong></div>
+
+        <div class="resumo-box">
+            <div style="font-size:48px; font-weight:800; color:var(--primary)" id="res-vols">0</div>
+            <div id="res-remessas" style="font-weight:bold;">0 Remessas Totais</div>
+        </div>
+
+        <h4 style="color:var(--text-sub); font-size:14px; margin-bottom:10px;">ETIQUETAS PALLETS IDENTIFICADOS:</h4>
+        <div id="lista-pallets-container"></div>
+
+        <button class="btn-imprimir-tudo" onclick="imprimirTudo()">
+            <span class="material-icons">print</span> IMPRIMIR TODOS
+        </button>
+    </div>
+</div>
+
+<script>
+    const API = "http://127.0.0.1:8000";
+    let palletsMemoria = [];
+
+    function toggleTheme() {
+        const body = document.body;
+        const icon = document.getElementById('theme-icon');
+        body.classList.toggle('dark-mode');
+        icon.innerText = body.classList.contains('dark-mode') ? 'brightness_7' : 'brightness_4';
+    }
+
+async function buscarDados(num) {
+    if(!num) return;
+    
+    try {
+        const rPallets = await fetch(`${API}/pallets-da-carga/${num}`);
+        const dPallets = await rPallets.json();
+        palletsMemoria = dPallets.pallets || [];
+
+        if (palletsMemoria.length > 0) {
+            const p = palletsMemoria[0];
+            const regiaoUF = (p.destino || "").toUpperCase().trim();
+            
+            // --- NOVA LÓGICA DE IDENTIFICAÇÃO ---
+            // Se for PB ou PE, vira LAST MILE. Caso contrário, CARGA DIRETA.
+            const novoCliente = (regiaoUF === "PB" || regiaoUF === "PE") ? "LAST MILE" : "CARGA DIRETA";
+            
+            document.getElementById('res-cliente').innerText = novoCliente; 
+            document.getElementById('res-destino').innerText = regiaoUF || "-"; 
+            
+            const totalVols = palletsMemoria.reduce((acc, x) => acc + parseInt(x.quantidade), 0);
+            const totalRem = palletsMemoria.reduce((acc, x) => acc + parseInt(x.qtd_remessas), 0);
+            
+            document.getElementById('res-vols').innerText = totalVols;
+            document.getElementById('res-remessas').innerText = `${totalRem} Remessas Bipadas`;
+        } else {
+            // Caso a carga ainda não tenha pallets (Busca na planilha mestre)
+            const rInfo = await fetch(`${API}/info-carga/${num}`);
+            const dInfo = await rInfo.json();
+            
+            if(dInfo.erro) { alert("Carga não encontrada!"); return; }
+            
+            const regiaoUF = (dInfo.uf || "").toUpperCase().trim();
+            const novoCliente = (regiaoUF === "PB" || regiaoUF === "PE") ? "LAST MILE" : "CARGA DIRETA";
+
+            document.getElementById('res-cliente').innerText = novoCliente;
+            document.getElementById('res-destino').innerText = regiaoUF || "-"; 
+            document.getElementById('res-vols').innerText = dInfo.total_volumes;
+            document.getElementById('res-remessas').innerText = `${dInfo.total_remessas || 0} Remessas Totais`;
+        }
+
+        document.getElementById('res-carga').innerText = num;
+        
+        // --- AJUSTE DE CORES DINÂMICO ---
+        const cor = document.getElementById('res-cliente').innerText === "LAST MILE" ? "#0984e3" : "#2ecc71 ";
+        document.getElementById('res-cliente').style.color = cor;
+        document.getElementById('res-cliente').style.borderColor = cor;
+        document.getElementById('res-vols').style.color = cor;
+
+        renderizarCards(cor);
+        document.getElementById('area-busca').style.display = 'none';
+        document.getElementById('visor').style.display = 'block';
+
+    } catch (e) { 
+        alert("Erro ao carregar dados."); 
+    }
+}
+
+    function renderizarCards(cor) {
+        const container = document.getElementById('lista-pallets-container');
+        container.innerHTML = palletsMemoria.length > 0 ? palletsMemoria.map(p => `
+            <div class="card-pallet" style="border-left-color: ${cor}">
+                <div class="pallet-info-main">
+                    <strong>${p.id_pallet}</strong>
+                    <span class="material-icons" style="color:var(--success)">check_circle</span>
+                </div>
+                <div class="pallet-tags">
+                    <span class="tag tag-vol" style="background:${cor}">
+                        <span class="material-icons" style="font-size:12px;">inventory_2</span> ${p.quantidade} Vols
+                    </span>
+                    <span class="tag tag-rem">
+                        <span class="material-icons" style="font-size:12px;">description</span> ${p.qtd_remessas} Rem
+                    </span>
+                </div>
+            </div>
+        `).join('') : "<p style='text-align:center; opacity:0.5; padding:20px;'>Nenhum pallet fechado.</p>";
+    }
+
+async function imprimirTudo() {
+    const listaParaImprimir = [];
+    const cargaAtual = document.getElementById('res-carga').innerText;
+    const destinoAtual = document.getElementById('res-destino').innerText;
+    const clienteVisor = document.getElementById('res-cliente').innerText;
+
+    // Se houver pallets fechados na memória, usamos eles
+    if (palletsMemoria.length > 0) {
+        palletsMemoria.forEach(p => {
+            listaParaImprimir.push({
+                id_pallet: String(p.id_pallet),
+                carga: String(cargaAtual),
+                cliente: String(p.cliente || clienteVisor),
+                destino: String(destinoAtual),
+                quantidade: parseInt(p.quantidade) || 0,
+                qtd_remessas: parseInt(p.qtd_remessas) || 0,
+                remessas_lista: String(p.remessas_lista || "-")
+            });
+        });
+    } else {
+        // Se não houver pallets mas os dados estão na tela, 
+        // criamos um objeto temporário para permitir a impressão da carga
+        listaParaImprimir.push({
+            id_pallet: "PENDENTE",
+            carga: String(cargaAtual),
+            cliente: String(clienteVisor),
+            destino: String(destinoAtual),
+            quantidade: parseInt(document.getElementById('res-vols').innerText) || 0,
+            qtd_remessas: 0,
+            remessas_lista: "Aguardando bipagem"
+        });
+    }
+
+    const payload = { pallets: listaParaImprimir };
+
+    console.log("Payload enviado para a API:", payload);
+
+    try {
+        const response = await fetch(`${API}/imprimir-todos-pallets`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const res = await response.json();
+
+        if (response.ok && res.status === "ok") {
+            alert(`Sucesso! ${res.impressos} etiqueta(s) enviada(s) para a Zebra.`);
+        } else {
+            console.error("Erro retornado pela API:", res);
+            alert("Erro na API: " + (res.detalhe || "Falha na estrutura dos dados"));
+        }
+    } catch (e) {
+        console.error("Erro de conexão:", e);
+        alert("Não foi possível conectar ao servidor Python (Porta 8000).");
+    }
+}
+</script>
+</body>
+</html>

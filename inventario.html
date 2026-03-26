@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CD & LM | MAPA DE INVENTÁRIO PRO</title>
+    
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root { 
+            --primary: #CF035C; 
+            --primary-dark: #a10248;
+            --bg: #0f172a; 
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --success: #10b981; 
+            --danger: #ef4444; 
+            --accent: #38bdf8;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--bg);
+            background-image: radial-gradient(circle at 50% 0%, #1e293b 0%, #0f172a 100%);
+            color: var(--text-main); 
+            margin: 0; 
+            padding: 20px; 
+            min-height: 100vh;
+        }
+
+        /* HEADER E BUSCA */
+        header { 
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            padding: 15px 25px; 
+            display: flex; 
+            align-items: center; 
+            gap: 20px; 
+            border-radius: 16px; 
+            margin-bottom: 25px; 
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .search-container { 
+            background: rgba(15, 23, 42, 0.8); 
+            border-radius: 12px; 
+            display: flex; 
+            align-items: center; 
+            padding: 10px 18px; 
+            flex: 1; 
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: 0.3s;
+        }
+
+        .search-container:focus-within {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(207, 3, 92, 0.2);
+        }
+
+        .search-container input { 
+            background: transparent;
+            border: none; 
+            outline: none; 
+            width: 100%; 
+            margin-left: 12px; 
+            font-size: 15px; 
+            color: white; 
+        }
+
+        .search-container i { color: var(--text-dim); }
+
+        /* PAINEL DE STATUS */
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding: 0 10px;
+        }
+
+        .legenda { 
+            display: flex; 
+            gap: 20px; 
+            font-weight: 600; 
+            font-size: 13px; 
+        }
+
+        .legenda-item { display: flex; align-items: center; gap: 8px; color: var(--text-dim); }
+        .box { width: 14px; height: 14px; border-radius: 3px; }
+        .box.vazio { background: var(--success); }
+        .box.ocupado { background: var(--danger); }
+
+        .stats-count {
+            font-size: 12px;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 800;
+        }
+
+        /* RUA E GRID */
+        .rua-container { margin-bottom: 40px; }
+        
+        .rua-titulo { 
+            background: linear-gradient(90deg, var(--primary), #800239);
+            color: white; 
+            padding: 8px 24px; 
+            border-radius: 8px 8px 0 0; 
+            display: inline-block; 
+            font-size: 12px; 
+            font-weight: 800;
+            letter-spacing: 2px;
+        }
+
+        .grid-posicoes { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); 
+            gap: 8px; 
+            background: var(--card-bg); 
+            padding: 20px; 
+            border-radius: 0 15px 15px 15px; 
+            border: 1px solid rgba(255,255,255,0.05);
+            backdrop-filter: blur(5px);
+        }
+
+        /* POSIÇÃO INDIVIDUAL */
+        .posicao {
+            aspect-ratio: 1 / 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            border: 1px solid rgba(0,0,0,0.2);
+        }
+
+        .vazio { 
+            background: rgba(16, 185, 129, 0.2); 
+            color: var(--success);
+            border: 1px solid var(--success);
+        }
+
+        .vazio:hover { background: var(--success); color: white; }
+        
+        .ocupado { 
+            background: var(--danger); 
+            box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3);
+            border: none;
+        }
+
+        .ocupado::after {
+            content: "";
+            position: absolute;
+            width: 100%; height: 100%;
+            border-radius: inherit;
+            background: inherit;
+            animation: pulse 2s infinite ease-out;
+            z-index: -1;
+        }
+
+        @keyframes pulse { 
+            0% { transform: scale(1); opacity: 0.5; } 
+            100% { transform: scale(1.4); opacity: 0; } 
+        }
+
+        /* FILTROS */
+        .posicao.faded { 
+            opacity: 0.15; 
+            filter: grayscale(1); 
+            transform: scale(0.9);
+        }
+
+        .posicao.highlight { 
+            transform: scale(1.2); 
+            z-index: 10; 
+            box-shadow: 0 0 25px var(--primary); 
+            border: 2px solid white;
+        }
+
+        /* BOTÃO HOME */
+        .btn-voltar { 
+            position: fixed; 
+            bottom: 30px; 
+            right: 30px; 
+            background: var(--primary); 
+            color: white; 
+            border: none; 
+            border-radius: 18px; 
+            width: 60px; 
+            height: 60px; 
+            box-shadow: 0 10px 20px rgba(207, 3, 92, 0.4); 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .btn-voltar:hover { transform: scale(1.1) translateY(-5px); background: var(--primary-dark); }
+
+        /* SCROLLBAR */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+<header>
+    <i class="material-icons" onclick="window.location.href='main.html'" style="cursor:pointer; color: var(--primary)">arrow_back</i>
+    <div class="search-container">
+        <i class="material-icons">search</i>
+        <input type="text" id="filtroCarga" placeholder="Filtrar por ID da Carga ou Pallet..." oninput="aplicarFiltro()">
+    </div>
+    <i class="material-icons" id="sync-icon" onclick="renderizarMapa()" style="cursor:pointer" title="Sincronizar">sync</i>
+</header>
+
+<div class="status-bar">
+    <div class="legenda">
+        <div class="legenda-item"><div class="box vazio"></div> Disponível</div>
+        <div class="legenda-item"><div class="box ocupado"></div> Em Estoque</div>
+    </div>
+    <div class="stats-count" id="stats-summary">Carregando mapa...</div>
+</div>
+
+<div id="layout-armazem"></div>
+
+<button class="btn-voltar" onclick="window.location.href='main.html'" title="Voltar ao Início">
+    <i class="material-icons" style="font-size: 28px;">home</i>
+</button>
+
+<script>
+    const API = "http://127.0.0.1:8000";
+    let mapaCargas = {}; 
+
+    function aplicarFiltro() {
+        const cargaDigitada = document.getElementById('filtroCarga').value.trim().toUpperCase();
+        const todasPosicoes = document.querySelectorAll('.posicao');
+
+        todasPosicoes.forEach(p => {
+            p.classList.remove('faded', 'highlight');
+            
+            if (cargaDigitada !== "") {
+                const enderecosDestaque = mapaCargas[cargaDigitada] || [];
+                const endPos = p.getAttribute('data-endereco');
+
+                if (enderecosDestaque.includes(endPos)) {
+                    p.classList.add('highlight');
+                } else {
+                    p.classList.add('faded');
+                }
+            }
+        });
+    }
+
+async function verDetalhes(endereco, ocupado) {
+    if (!ocupado) {
+        alert(`📍 ENDEREÇO: ${endereco}\nStatus: DISPONÍVEL`);
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API}/detalhes-posicao/${endereco}`);
+        const d = await response.json();
+
+        // Se a API retornar ocupado, mas os dados de expedição forem "OK", tratamos aqui
+        if (d.status === "ocupado" && d.expedicao !== "OK") {
+// No seu script do mapa, dentro da função verDetalhes:
+const msg = `📦 DETALHES DO ESTOQUE: ${endereco}\n` +
+            `----------------------------------\n` +
+            `🚚 CARGA: ${d.carga}\n` +
+            `🆔 PALLET: ${d.id_pallet}\n` +
+            `👤 CLIENTES: ${d.clientes}\n` + // Usando o novo campo plural
+            `📑 REMESSAS (${d.total_remessas}): ${d.lista_remessas}`; // Mostra a lista completa
+alert(msg);
+        } else {
+            // Se cair aqui, significa que a Expedição já foi concluída (OK)
+            alert("✅ Esta posição já foi expedida e está em processo de liberação no mapa.");
+            renderizarMapa(); // Força a atualização para limpar o mapa
+        }
+    } catch (e) {
+        alert("Erro ao conectar com a API da MC Tech.");
+    }
+}
+
+    async function renderizarMapa() {
+        const syncBtn = document.getElementById('sync-icon');
+        syncBtn.style.animation = "rotate 1s infinite linear";
+
+        try {
+            const [resOcupados, resMapaCargas] = await Promise.all([
+                fetch(`${API}/posicoes-ocupadas`),
+                fetch(`${API}/mapa-por-carga`)
+            ]);
+
+            const ocupados = await resOcupados.json();
+            mapaCargas = await resMapaCargas.json();
+
+            const container = document.getElementById('layout-armazem');
+            container.innerHTML = ""; 
+
+            let totalVagas = 0;
+            let totalOcupadas = 0;
+
+            for (let r = 1; r <= 3; r++) {
+                const ruaId = r.toString().padStart(2, '0');
+                const ruaDiv = document.createElement('div');
+                ruaDiv.className = "rua-container";
+                ruaDiv.innerHTML = `<div class="rua-titulo">RUA ${ruaId}</div>`;
+                
+                const grid = document.createElement('div');
+                grid.className = "grid-posicoes";
+
+                for (let p = 3; p <= 46; p++) {
+                    totalVagas++;
+                    const posId = p.toString().padStart(3, '0');
+                    const enderecoFull = `${ruaId}-${posId}-10`;
+                    const isOcupado = ocupados.includes(enderecoFull);
+                    
+                    if(isOcupado) totalOcupadas++;
+
+                    const el = document.createElement('div');
+                    el.className = `posicao ${isOcupado ? 'ocupado' : 'vazio'}`;
+                    el.innerHTML = `<span>${posId}</span>`;
+                    el.setAttribute('data-endereco', enderecoFull);
+                    
+                    el.onclick = () => verDetalhes(enderecoFull, isOcupado);
+                    grid.appendChild(el);
+                }
+                
+                ruaDiv.appendChild(grid);
+                container.appendChild(ruaDiv);
+            }
+            
+            document.getElementById('stats-summary').innerText = `Ocupação: ${totalOcupadas} de ${totalVagas} posições`;
+            aplicarFiltro();
+            
+        } catch (e) {
+            console.error("Erro na sincronização:", e);
+        } finally {
+            syncBtn.style.animation = "none";
+        }
+    }
+
+    // CSS Adicional para animação do sync
+    const style = document.createElement('style');
+    style.innerHTML = "@keyframes rotate { from {transform: rotate(0deg)} to {transform: rotate(360deg)} }";
+    document.head.appendChild(style);
+
+    renderizarMapa();
+    setInterval(renderizarMapa, 30000);
+</script>
+
+</body>
+</html>

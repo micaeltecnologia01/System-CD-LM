@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CD & LM | CONFERÊNCIA AUTOMAÇÃO</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        :root { --primary: #CF035C; --bg: #f5f5f5; --card: #ffffff; --text: #333; --success: #27ae60; --danger: #c0392b; --warning: #f39c12; }
+        body.dark-mode { --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; transition: 0.3s; overflow-x: hidden; }
+        
+        header { background: var(--primary); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .container { padding: 10px; max-width: 550px; margin: auto; }
+        
+        .status-banner { background: #34495e; color: white; border-radius: 12px; padding: 12px; text-align: center; margin-bottom: 10px; font-weight: bold; text-transform: uppercase; font-size: 13px; }
+        
+        /* Dashboard de Informações */
+        .info-card { background: var(--card); border-radius: 12px; padding: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; border-top: 4px solid var(--primary); }
+        .info-item { border-bottom: 1px solid #eee; padding: 4px 0; }
+        .info-item span { display: block; color: #888; font-size: 9px; font-weight: bold; text-transform: uppercase; }
+        .info-item strong { font-size: 13px; color: var(--text); }
+        .full-width { grid-column: span 2; }
+
+        /* Contadores de Volume Estilizados */
+        .vol-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; grid-column: span 2; margin-top: 5px; }
+        .vol-badge { display: flex; align-items: center; gap: 8px; background: rgba(207, 3, 92, 0.05); padding: 8px; border-radius: 8px; border: 1px dashed var(--primary); }
+        .vol-badge i { color: var(--primary); font-size: 18px; }
+        .vol-badge div { display: flex; flex-direction: column; }
+        .vol-badge label { font-size: 8px; font-weight: bold; color: #888; }
+        .vol-badge strong { font-size: 14px; color: var(--primary); }
+
+        /* Inputs */
+        .inputs-area { display: flex; flex-direction: column; gap: 10px; background: var(--card); padding: 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid #ddd; }
+        .input-box label { font-size: 11px; font-weight: bold; color: var(--primary); margin-bottom: 5px; display: block; }
+        .input-dual { width: 100%; padding: 15px; border-radius: 8px; border: 2px solid #ddd; font-size: 15px; box-sizing: border-box; background: var(--card); color: var(--text); font-weight: bold; outline: none; }
+        .input-dual:focus { border-color: var(--primary); box-shadow: 0 0 8px rgba(207, 3, 92, 0.2); }
+        .input-dual.reading { border-color: var(--warning); background: #fffdf0; }
+
+        .footer { text-align: center; margin-top: 15px; font-size: 10px; color: #aaa; letter-spacing: 1px; }
+    </style>
+</head>
+<body id="main-body">
+
+<header>
+    <div style="display:flex; align-items:center; gap:10px;">
+        <span class="material-icons btn-icon" onclick="window.location.href='main.html'">arrow_back</span>
+        <strong>MENU</strong>
+    </div>
+    <span style="font-weight: bold; letter-spacing: 1px;">CONFERÊNCIA AUTOMAÇÃO | CD & LM</span>
+    <span class="material-icons" onclick="toggleDark()" style="cursor:pointer">brightness_4</span>
+</header>
+
+<div class="container">
+    <div class="status-banner" id="status-display">PRONTO PARA LEITURA</div>
+
+    <div class="info-card">
+        <div class="info-item"><span>Carga</span><strong id="v-carga">-</strong></div>
+        <div class="info-item"><span>Remessa</span><strong id="v-remessa">-</strong></div>
+        
+        <div class="info-item full-width"><span>Cliente</span><strong id="v-cliente">-</strong></div>
+        
+        <div class="info-item"><span>Lote</span><strong id="v-lote">-</strong></div>
+        <div class="info-item"><span>Processo</span><strong style="color: var(--primary);">Automação</strong></div>
+
+        <div class="info-item"><span>Cidade</span><strong id="v-cidade">-</strong></div>
+        <div class="info-item"><span>Região</span><strong id="v-regiao">-</strong></div>
+
+        <div class="info-item full-width"><span>Nota Fiscal (NF)</span><strong id="v-nf">-</strong></div>
+
+        <div class="vol-row">
+            <div class="vol-badge">
+                <i class="material-icons">local_shipping</i>
+                <div><label>VOL. REMESSA</label><strong id="v-vol-rem">0 / 0</strong></div>
+            </div>
+            <div class="vol-badge">
+                <i class="material-icons">layers</i>
+                <div><label>VOL. LOTE</label><strong id="v-vol-lote">0 / 0</strong></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="inputs-area">
+        <div class="input-box">
+            <label>1. ETIQUETA CLIENTE (BUSCA DADOS)</label>
+            <input type="text" id="bip-cliente" class="input-dual" placeholder="AGUARDANDO CLIENTE..." autocomplete="off" autofocus>
+        </div>
+        <div class="input-box">
+            <label>2. ETIQUETA PRODUTO (CONFIRMAÇÃO)</label>
+            <input type="text" id="bip-produto" class="input-dual" placeholder="AGUARDANDO PRODUTO..." autocomplete="off">
+        </div>
+    </div>
+
+    <div class="footer">ACHÉ LABORATÓRIO FARMACÊUTICO S.A | DESENVOLVIDO POR MICAEL DUTRA</div>
+</div>
+
+<script>
+    const API_URL = "http://127.0.0.1:8000"; // Aqui você trocará pela URL da nova API quando pronta
+    const inpCliente = document.getElementById('bip-cliente');
+    const inpProduto = document.getElementById('bip-produto');
+    const display = document.getElementById('status-display');
+
+    function toggleDark() { document.getElementById('main-body').classList.toggle('dark-mode'); }
+
+    // Variável para guardar o que a API do Cliente retornar para validar contra o produto
+    let dadosEsperados = null;
+
+    // 1º BIPE: CLIENTE
+    inpCliente.addEventListener('keypress', async (e) => {
+        if (e.key === 'Enter' && inpCliente.value.trim() !== "") {
+            display.innerText = "BUSCANDO DADOS DO CLIENTE...";
+            display.style.background = "#34495e";
+            
+            try {
+                // Chamada para a API que traz os dados pelo Código do Cliente
+                const r = await fetch(`${API_URL}/buscar_cliente?codigo=${inpCliente.value.trim()}`);
+                const res = await r.json();
+
+                if(res.sucesso) {
+                    dadosEsperados = res.dados;
+                    atualizarInterface(res.dados, inpCliente.value.trim());
+                    display.innerText = "CLIENTE OK! AGUARDANDO PRODUTO...";
+                    display.style.background = "var(--warning)";
+                    inpProduto.focus();
+                } else {
+                    display.innerText = "CLIENTE NÃO ENCONTRADO";
+                    display.style.background = "var(--danger)";
+                    inpCliente.value = "";
+                }
+            } catch (err) {
+                display.innerText = "ERRO AO CONECTAR NA API";
+                display.style.background = "var(--danger)";
+            }
+        }
+    });
+
+    // 2º BIPE: PRODUTO (CONFIRMAÇÃO)
+    inpProduto.addEventListener('keypress', async (e) => {
+        if (e.key === 'Enter' && inpProduto.value.trim() !== "") {
+            if(!dadosEsperados) {
+                display.innerText = "BIPE O CLIENTE PRIMEIRO!";
+                inpCliente.focus();
+                return;
+            }
+
+            display.innerText = "CONFIRMANDO PRODUTO...";
+            
+            try {
+                const r = await fetch(`${API_URL}/registrar_bip`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        codigo: inpProduto.value.trim(), 
+                        etiqueta_cliente: inpCliente.value.trim(),
+                        tipo_processo: "AUTOMAÇÃO" 
+                    })
+                });
+
+                const res = await r.json();
+
+                if(res.dados.valido) {
+                    display.innerText = "CONFERÊNCIA REALIZADA COM SUCESSO!";
+                    display.style.background = "var(--success)";
+                    // Atualiza contadores após gravação
+                    document.getElementById('v-vol-rem').innerText = `${res.dados.vol_bipados} / ${res.dados.vol_total}`;
+                    document.getElementById('v-vol-lote').innerText = `${res.dados.vol_lote_bipados} / ${res.dados.vol_lote_total}`;
+                } else {
+                    display.innerText = res.dados.status || "ERRO DE VALIDAÇÃO";
+                    display.style.background = "var(--danger)";
+                }
+
+                // Reset para novo ciclo
+                inpCliente.value = "";
+                inpProduto.value = "";
+                dadosEsperados = null;
+                setTimeout(() => inpCliente.focus(), 500);
+
+            } catch (err) {
+                display.innerText = "ERRO AO REGISTRAR";
+                display.style.background = "var(--danger)";
+            }
+        }
+    });
+
+    function atualizarInterface(d, codCli) {
+        document.getElementById('v-carga').innerText = d.carga || "-";
+        document.getElementById('v-remessa').innerText = d.remessa || "-";
+        document.getElementById('v-cliente').innerText = d.cliente || "-";
+        document.getElementById('v-lote').innerText = d.lote || "-";
+        document.getElementById('v-cidade').innerText = d.cidade || "-";
+        document.getElementById('v-regiao').innerText = d.regiao || "-";
+        document.getElementById('v-nf').innerText = d.nf || "-";
+        document.getElementById('v-cod-cli').innerText = codCli;
+        document.getElementById('v-vol-rem').innerText = `${d.vol_bipados_rem} / ${d.vol_total_rem}`;
+        document.getElementById('v-vol-lote').innerText = `${d.vol_bipados_lote} / ${d.vol_total_lote}`;
+    }
+</script>
+</body>
+</html>

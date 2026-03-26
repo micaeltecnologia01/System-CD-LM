@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CD & LM | CONFERÊNCIA MANUAL</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        :root { 
+            --primary: #CF035C; 
+            --bg: #f5f5f5; 
+            --card: #ffffff; 
+            --text: #333; 
+            --success: #27ae60; 
+            --danger: #c0392b; 
+            --warning: #f39c12; 
+            --finalizado: #2c3e50; 
+        }
+        body.dark-mode { --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; transition: 0.3s; overflow-x: hidden; }
+        
+        header { background: var(--primary); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+
+        .container { padding: 15px; max-width: 500px; margin: auto; }
+
+        .status-banner {
+            background: #34495e; color: white; border-radius: 12px; padding: 20px;
+            text-align: center; margin-bottom: 15px; font-weight: bold; font-size: 18px;
+            transition: 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.2); text-transform: uppercase;
+        }
+
+        .info-card {
+            background: var(--card); border-radius: 12px; padding: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 15px;
+        }
+        .info-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
+        body.dark-mode .info-row { border-bottom-color: #333; }
+        .info-row span { color: #888; font-size: 11px; font-weight: bold; text-transform: uppercase; }
+        .info-row strong { font-size: 14px; color: var(--text); }
+
+        .vol-box { text-align: center; padding: 15px; background: rgba(207, 3, 92, 0.05); border-radius: 10px; margin-top: 10px; }
+        .vol-box span { display: block; font-size: 12px; color: var(--primary); font-weight: bold; }
+        .vol-box strong { font-size: 28px; color: var(--primary); }
+
+        .input-group { position: relative; margin-top: 10px; }
+        .input-bip {
+            width: 100%; padding: 18px; border-radius: 12px; border: 2px solid #ddd;
+            font-size: 16px; box-sizing: border-box; outline: none; transition: 0.3s;
+            background: var(--card); color: var(--text); text-align: center; font-weight: bold;
+        }
+        .input-bip:focus { border-color: var(--primary); box-shadow: 0 0 10px rgba(207, 3, 92, 0.2); }
+
+        .btn-fechar-plt {
+            width: 100%; padding: 18px; margin-top: 15px; border-radius: 12px; border: none;
+            background: var(--finalizado); color: white; font-weight: bold; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.2s;
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+        .btn-fechar-plt:active { transform: scale(0.98); opacity: 0.9; }
+
+        .floating-count {
+            position: fixed; bottom: 20px; right: 20px; background: var(--primary);
+            color: white; padding: 12px 20px; border-radius: 50px; display: flex;
+            align-items: center; gap: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); font-weight: bold;
+        }
+
+        .btn-voltar { color: white; text-decoration: none; display: flex; align-items: center; gap: 5px; font-size: 14px; font-weight: bold; }
+    </style>
+</head>
+<body id="main-body"> <header>
+    <div style="display:flex; align-items:center; gap:10px;">
+        <span class="material-icons btn-icon" onclick="window.location.href='main.html'">arrow_back</span>
+        <strong>MENU</strong>
+    </div>
+    <span style="font-weight: bold; letter-spacing: 1px;">CONFERÊNCIA MANUAL | CD & LM</span>
+    <span class="material-icons" style="cursor:pointer" onclick="toggleDark()">brightness_4</span>
+</header>
+
+<div class="container">
+    <div class="status-banner" id="status-display">PRONTO PARA LEITURA</div>
+
+    <div class="info-card">
+        <div class="info-row">
+            <span>Tipo de Processo</span>
+            <strong style="color: var(--primary);">Manual</strong>
+        </div>
+        <div class="info-row">
+            <span>Remessa</span>
+            <strong id="v-rem">-</strong>
+        </div>
+        <div class="info-row">
+            <span>Nota Fiscal (NF-e)</span>
+            <strong id="v-nf">-</strong>
+        </div>
+        <div class="info-row">
+            <span>Cidade / Região</span>
+            <strong id="v-cid-reg">-</strong>
+        </div>
+        <div class="info-row">
+            <span>Carga | Cliente</span>
+            <strong id="v-meta">-</strong>
+        </div>
+        
+        <div class="vol-box">
+            <span>VOLUMES BIPADOS DA REMESSA</span>
+            <strong id="v-vol">0 / 0</strong>
+        </div>
+    </div>
+
+    <div class="input-group">
+        <input type="text" id="input-bip" class="input-bip" placeholder="BIPE A ETIQUETA..." autofocus autocomplete="off">
+    </div>
+
+    <button class="btn-fechar-plt" onclick="gerarIdPallet()">
+        <span class="material-icons">inventory</span> FECHAR PALLET ATUAL
+    </button>
+</div>
+
+<div class="floating-count">
+    <span class="material-icons">query_stats</span>
+    <span id="total-sessao">TOTAL DIA: 0</span>
+</div>
+
+<audio id="snd-ok" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
+<audio id="snd-err" src="https://assets.mixkit.co/active_storage/sfx/2873/2873-preview.mp3"></audio>
+
+<script>
+    const API = "http://127.0.0.1:8000";
+    let cargaAtual = null; 
+    let volumesLidos = 0;
+    
+    function toggleDark() {
+        document.getElementById('main-body').classList.toggle('dark-mode');
+    }
+
+    // Foco automático no input
+    document.addEventListener('click', () => document.getElementById('input-bip').focus());
+
+    document.getElementById('input-bip').addEventListener('keypress', async function(e) {
+        if (e.key === 'Enter') {
+            const barcode = this.value.trim();
+            this.value = '';
+
+            if (!barcode || barcode.length < 3) {
+                feedbackErro("LEITURA INVÁLIDA");
+                return;
+            }
+
+            const display = document.getElementById('status-display');
+            display.innerText = "PROCESSANDO...";
+
+            try {
+                const r = await fetch(`${API}/registrar_bip`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        codigo: barcode, 
+                        tipo_processo: "Manual"
+                    })
+                });
+
+                const res = await r.json();
+                const d = res.dados;
+
+                if (d.valido || res.status === "duplicado") {
+                    cargaAtual = d.carga_planilha;
+                    volumesLidos = d.vol_bipados;
+                    
+                    document.getElementById('v-rem').innerText = res.remessa || "-";
+                    document.getElementById('v-nf').innerText = d.nf || "-";
+                    document.getElementById('v-cid-reg').innerText = d.cidade || "-";
+                    document.getElementById('v-vol').innerText = `${d.vol_bipados} / ${d.vol_total}`;
+                    document.getElementById('v-meta').innerText = `${d.carga_planilha} | ${d.cliente_planilha}`;
+                    
+                    display.innerText = d.status;
+
+                    if (res.status === "duplicado") {
+                        display.style.background = "var(--warning)";
+                        document.getElementById('snd-err').play();
+                    } else {
+                        if (d.vol_bipados >= d.vol_total && d.vol_total > 0) {
+                            display.style.background = "var(--finalizado)";
+                            display.innerText = `✅ REMESSA FINALIZADA`;
+                        } else {
+                            display.style.background = "var(--success)";
+                        }
+                        document.getElementById('snd-ok').play();
+                        atualizarTotalSessao();
+                    }
+                } else {
+                    feedbackErro(d.status || "NÃO ENCONTRADO");
+                }
+
+            } catch (err) {
+                feedbackErro("ERRO DE CONEXÃO");
+            }
+        }
+    });
+
+    function feedbackErro(msg) {
+        const display = document.getElementById('status-display');
+        display.innerText = msg;
+        display.style.background = "var(--danger)";
+        document.getElementById('snd-err').play();
+    }
+
+async function gerarIdPallet() {
+    if (!cargaAtual) {
+        alert("Bipe ao menos uma etiqueta antes de fechar o pallet!");
+        return;
+    }
+
+    // O confirm agora é genérico, pois o ID exato quem sabe é o servidor
+    if (confirm(`Deseja encerrar o Pallet atual para a Carga ${cargaAtual}?`)) {
+        try {
+            const r = await fetch(`${API}/fechar-pallet`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    carga: String(cargaAtual),
+                    id_pallet: "AUTO" 
+                })
+            });
+            
+            const res = await r.json();
+
+            if (r.ok && res.status === "ok") {
+                // Aqui o res.id_pallet já virá como "PLT506 - 25.03.2026 - 0001"
+                alert(`Pallet Fechado com Sucesso!\nID: ${res.id_pallet}`);
+                location.reload(); 
+            } else {
+                alert("Erro: " + (res.mensagem || "Não foi possível fechar o pallet. Verifique se há volumes pendentes."));
+            }
+        } catch (e) {
+            alert("Erro de conexão com o servidor Python.");
+        }
+    }
+}
+
+    async function atualizarTotalSessao() {
+        try {
+            const r = await fetch(`${API}/produtividade`);
+            const d = await r.json();
+            document.getElementById('total-sessao').innerText = `TOTAL DIA: ${d.total}`;
+        } catch (e) {}
+    }
+
+    atualizarTotalSessao();
+</script>
+
+</body>
+</html>

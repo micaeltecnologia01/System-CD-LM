@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CD & LM | LOGIN</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* Alterado de azul para Magenta (#CF035C) para seguir o padrão */
+            --primary: #CF035C; 
+            --primary-hover: #a5024a;
+            --accent: #0984e3; /* Azul para ações secundárias, invertendo o contraste */
+            --success: #22c55e;
+            --bg: #f3f4f6;
+            --white: #ffffff;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --border: #d1d5db;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: var(--text-main);
+        }
+
+        .login-container {
+            background: var(--white);
+            padding: 2.5rem;
+            border-radius: 24px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .logo-area { margin-bottom: 2rem; }
+        .logo-area h1 {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: -1px;
+        }
+        .logo-area p { font-size: 0.85rem; color: var(--text-muted); margin-top: 5px; }
+
+        .form-group { text-align: left; margin-bottom: 1.2rem; }
+        label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.5rem; }
+        
+        input {
+            width: 100%;
+            padding: 0.9rem 1rem;
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+        input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(207, 3, 92, 0.1); }
+
+        .btn-main {
+            width: 100%;
+            padding: 1rem;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.3s;
+            margin-top: 0.5rem;
+        }
+        .btn-main:hover { background-color: var(--primary-hover); transform: translateY(-1px); }
+        .btn-main:disabled { background-color: var(--text-muted); cursor: not-allowed; }
+
+        .footer-links {
+            margin-top: 1.5rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.85rem;
+        }
+        .footer-links a { color: var(--primary); text-decoration: none; font-weight: 600; cursor: pointer; }
+        .footer-links a:hover { text-decoration: underline; }
+        .divider { color: var(--border); }
+
+        /* MODAIS */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 999;
+            left: 0; top: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            align-items: center; justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 20px;
+            width: 90%; max-width: 380px;
+            position: relative;
+            animation: slideUp 0.3s ease;
+        }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        
+        .close-btn { position: absolute; top: 15px; right: 20px; font-size: 1.5rem; cursor: pointer; color: var(--text-muted); }
+
+        .copyright { margin-top: 2.5rem; font-size: 0.7rem; color: var(--text-muted); }
+    </style>
+</head>
+<body>
+
+    <div class="login-container">
+        <div class="logo-area">
+            <h1>CD & LM</h1>
+            <p>Logística Carga Direta & Last Mile</p>
+        </div>
+
+        <form id="login-form">
+            <div class="form-group">
+                <label>Usuário ou E-mail</label>
+                <input type="text" id="login-user" placeholder="Seu acesso" required>
+            </div>
+            <div class="form-group">
+                <label>Senha</label>
+                <input type="password" id="login-pass" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="btn-main" id="btn-entrar">Acessar Sistema</button>
+            
+            <div class="footer-links">
+                <a onclick="openModal('modal-forgot')">Esqueci a senha</a>
+                <span class="divider">|</span>
+                <a onclick="openModal('modal-register')">Cadastre-se</a>
+            </div>
+        </form>
+
+        <div class="copyright">&copy; ACHÉ LABORATÓRIO FARMACÊUTICO S.A | DESENVOLVIDO POR MICAEL DUTRA </div>
+    </div>
+
+    <div id="modal-register" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('modal-register')">&times;</span>
+            <h2 style="color: var(--primary); margin-bottom: 1.2rem;">Novo Usuário</h2>
+            <form id="register-form">
+                <div class="form-group">
+                    <label>Nome Completo</label>
+                    <input type="text" id="reg-user" required>
+                </div>
+                <div class="form-group">
+                    <label>E-mail Corporativo</label>
+                    <input type="email" id="reg-email" placeholder="@ache.com.br" required>
+                </div>
+                <div class="form-group">
+                    <label>Senha</label>
+                    <input type="password" id="reg-pass" required>
+                </div>
+                <div class="form-group">
+                    <label>Confirmar Senha</label>
+                    <input type="password" id="reg-conf" required>
+                </div>
+                <button type="submit" class="btn-main" style="background: var(--success);">Confirmar Cadastro</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-forgot" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('modal-forgot')">&times;</span>
+            <h2 style="color: var(--primary); margin-bottom: 1rem;">Recuperar Senha</h2>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1.5rem;">Insira seu e-mail cadastrado para receber as credenciais.</p>
+            <form id="forgot-form">
+                <div class="form-group">
+                    <label>E-mail Corporativo</label>
+                    <input type="email" id="forgot-email" required>
+                </div>
+                <button type="submit" id="btn-forgot" class="btn-main" style="background: var(--accent);">Enviar por E-mail</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "http://127.0.0.1:8000"; 
+
+        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+        document.getElementById('login-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const user = document.getElementById('login-user').value;
+            const pass = document.getElementById('login-pass').value;
+            const btn = document.getElementById('btn-entrar');
+
+            btn.innerText = "Autenticando...";
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(`${API_URL}/login`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ user: user, password: pass })
+                });
+
+                if(res.ok) {
+                    localStorage.setItem('usuarioLogado', user);
+                    window.location.href = "main.html"; 
+                } else {
+                    alert("Usuário ou senha incorretos.");
+                }
+            } catch (err) {
+                alert("Servidor Offline. Certifique-se que o Python está rodando.");
+            } finally {
+                btn.innerText = "Acessar Sistema";
+                btn.disabled = false;
+            }
+        };
+
+        document.getElementById('register-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const nome = document.getElementById('reg-user').value;
+            const email = document.getElementById('reg-email').value;
+            const senha = document.getElementById('reg-pass').value;
+            const conf = document.getElementById('reg-conf').value;
+
+            if(senha !== conf) { alert("As senhas não conferem!"); return; }
+
+            try {
+                const res = await fetch(`${API_URL}/cadastrar`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ nome, email, senha })
+                });
+
+                if(res.ok) {
+                    alert("Cadastro realizado com sucesso!");
+                    closeModal('modal-register');
+                    e.target.reset();
+                } else {
+                    alert("Erro ao cadastrar. O e-mail pode já estar em uso.");
+                }
+            } catch (err) {
+                alert("Erro de conexão com o servidor.");
+            }
+        };
+
+        document.getElementById('forgot-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('forgot-email').value;
+            const btn = document.getElementById('btn-forgot');
+
+            btn.innerText = "Enviando...";
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(`${API_URL}/recuperar`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ email: email })
+                });
+
+                if(res.ok) {
+                    alert("E-mail enviado! Verifique sua caixa de entrada.");
+                    closeModal('modal-forgot');
+                } else {
+                    alert("E-mail não encontrado no sistema.");
+                }
+            } catch (err) {
+                alert("Falha ao processar solicitação.");
+            } finally {
+                btn.innerText = "Enviar por E-mail";
+                btn.disabled = false;
+            }
+        };
+    </script>
+</body>
+</html>
