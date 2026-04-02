@@ -13,127 +13,75 @@
             --text: #333; 
             --success: #27ae60; 
             --danger: #c0392b; 
-            --warning: #f39c12; 
-            --finalizado: #2c3e50; 
+            --dark-blue: #2c3e50;
         }
-        body.dark-mode { --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; transition: 0.3s; overflow-x: hidden; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; }
         
-        header { background: var(--primary); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-
-        .container { padding: 15px; max-width: 550px; margin: auto; }
+        header { background: var(--primary); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        
+        .container { padding: 15px; max-width: 500px; margin: auto; }
 
         .status-banner {
             background: #34495e; color: white; border-radius: 12px; padding: 20px;
             text-align: center; margin-bottom: 15px; font-weight: bold; font-size: 18px;
-            transition: 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.2); text-transform: uppercase;
+            transition: 0.3s;
         }
 
         .info-card {
             background: var(--card); border-radius: 12px; padding: 15px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 15px;
         }
-        .info-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; align-items: center; }
-        body.dark-mode .info-row { border-bottom-color: #333; }
-        .info-row span { color: #888; font-size: 11px; font-weight: bold; text-transform: uppercase; min-width: 100px; }
-        .info-row strong { font-size: 14px; color: var(--text); text-align: right; word-break: break-all; }
+        .info-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
+        .info-row:last-child { border: none; }
+        .info-row span { color: #888; font-size: 12px; font-weight: bold; }
 
-        #area-lotes { 
-            display: none; 
-            margin-top: 15px; 
-            padding: 10px; 
-            background: rgba(0,0,0,0.02); 
-            border-radius: 8px;
-            border: 1px solid #eee;
-        }
-        .lote-header { font-size: 11px; font-weight: bold; color: var(--primary); margin-bottom: 10px; display: block; }
-        
+        #lista-lotes { margin-top: 10px; }
         .lote-item {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 12px; background: var(--card); border-radius: 8px; margin-bottom: 8px;
-            font-size: 14px; border-left: 5px solid var(--warning);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            padding: 12px; background: white; border-radius: 8px; margin-bottom: 8px;
+            border-left: 5px solid #f39c12; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
-        .lote-item.concluido { border-left-color: var(--success); background: #f0fff4; opacity: 0.8; }
-        .lote-info { display: flex; flex-direction: column; max-width: 70%; }
-        .lote-info strong { font-size: 15px; color: var(--primary); }
-        .lote-info small { font-size: 11px; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .lote-qtd { font-weight: 800; font-size: 18px; color: var(--finalizado); display: flex; align-items: baseline; gap: 3px; }
-        .lote-qtd small { font-size: 10px; color: #999; }
+        .lote-item.concluido { border-left-color: var(--success); background: #f0fff4; }
+        .lote-info { display: flex; flex-direction: column; }
+        .lote-info strong { color: var(--primary); }
+        .lote-info small { font-size: 11px; color: #666; }
 
-        .input-group { position: relative; margin-top: 10px; }
         .input-bip {
             width: 100%; padding: 20px; border-radius: 12px; border: 3px solid #ddd;
-            font-size: 18px; box-sizing: border-box; outline: none; transition: 0.3s;
-            background: var(--card); color: var(--text); text-align: center; font-weight: bold;
+            font-size: 18px; box-sizing: border-box; outline: none; text-align: center;
+            font-weight: bold; transition: 0.3s;
         }
-        .input-bip:focus { border-color: var(--primary); box-shadow: 0 0 15px rgba(207, 3, 92, 0.2); }
+        .input-bip:focus { border-color: var(--primary); }
 
-        .btn-fechar-plt {
+        .btn-fechar {
             width: 100%; padding: 18px; margin-top: 15px; border-radius: 12px; border: none;
-            background: var(--finalizado); color: white; font-weight: bold; cursor: pointer;
+            background: var(--dark-blue); color: white; font-weight: bold; cursor: pointer;
             display: flex; align-items: center; justify-content: center; gap: 10px;
-            text-transform: uppercase; transition: 0.2s;
         }
-        .btn-fechar-plt:hover { background: #1a252f; }
-        .btn-fechar-plt:disabled { background: #ccc; cursor: not-allowed; }
-
-        .floating-count {
-            position: fixed; bottom: 20px; right: 20px; background: var(--primary);
-            color: white; padding: 12px 20px; border-radius: 50px; font-weight: bold;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 100;
-        }
+        .btn-fechar:disabled { background: #ccc; cursor: not-allowed; }
     </style>
 </head>
-<body id="main-body">
+<body>
 
 <header>
-    <div style="display:flex; align-items:center; gap:10px;">
-        <span class="material-icons" style="cursor:pointer" onclick="location.reload()">refresh</span>
-        <strong>SISTEMA CONFERÊNCIA</strong>
-    </div>
-    <span style="font-weight: bold;">MODO CAIXAS (CX)</span>
-    <span class="material-icons" style="cursor:pointer" onclick="toggleDark()">brightness_4</span>
+    <strong>CONFERÊNCIA DE REMESSA</strong>
+    <span class="material-icons" style="cursor:pointer" onclick="location.reload()">refresh</span>
 </header>
 
 <div class="container">
-    <div class="status-banner" id="status-display">BIPE A REMESSA</div>
+    <div class="status-banner" id="banner">BIPE A ETIQUETA DA REMESSA</div>
 
     <div class="info-card">
-        <div class="info-row">
-            <span>MODO ATUAL</span>
-            <strong id="label-modo" style="color: var(--primary);">AGUARDANDO LEITURA...</strong>
-        </div>
-        <div class="info-row">
-            <span>Remessa SAP</span>
-            <strong id="v-rem">-</strong>
-        </div>
-        <div class="info-row">
-            <span>CARGA / NF</span>
-            <strong id="v-carga-nf">-</strong>
-        </div>
-        <div class="info-row">
-            <span id="label-dinamico">PRODUTO ATUAL</span>
-            <strong id="v-meta">-</strong>
-        </div>
-
-        <div id="area-lotes">
-            <span class="lote-header">LOTES DA REMESSA (CONFERÊNCIA):</span>
-            <div id="lista-lotes-status"></div>
-        </div>
+        <div class="info-row"><span>CARGA</span> <strong id="v-carga">-</strong></div>
+        <div class="info-row"><span>REMESSA</span> <strong id="v-rem">-</strong></div>
+        <div id="lista-lotes"></div>
     </div>
 
-    <div class="input-group">
-        <input type="text" id="input-bip" class="input-bip" placeholder="AGUARDANDO LEITURA..." autofocus autocomplete="off">
-    </div>
+    <input type="text" id="input-bip" class="input-bip" placeholder="AGUARDANDO LEITURA..." autofocus autocomplete="off">
 
-    <button class="btn-fechar-plt" id="btn-fechar" onclick="fecharPallet()" disabled>
-        <span class="material-icons">inventory_2</span> FECHAR PALLET (ID)
+    <button class="btn-fechar" id="btn-fechar" onclick="fecharPallet()" disabled>
+        <span class="material-icons">inventory_2</span> FECHAR PALLET
     </button>
-</div>
-
-<div class="floating-count">
-    <span id="total-sessao">DIA: 0</span>
 </div>
 
 <!-- Sons de Feedback -->
@@ -142,17 +90,12 @@
 
 <script>
     const API = "http://127.0.0.1:8000";
-    let modo = "REMESSA"; 
+    let modo = "REMESSA";
     let dadosCarga = null;
-    let progressoLotes = {}; 
-
-    function toggleDark() { document.getElementById('main-body').classList.toggle('dark-mode'); }
-    
-    // Foco automático no input
-    document.addEventListener('click', () => document.getElementById('input-bip').focus());
+    let progressoLotes = {};
 
     const input = document.getElementById('input-bip');
-    const banner = document.getElementById('status-display');
+    const banner = document.getElementById('banner');
 
     input.addEventListener('keypress', async (e) => {
         if (e.key === 'Enter') {
@@ -161,15 +104,15 @@
             if (!val) return;
 
             if (modo === "REMESSA") {
-                await buscarRemessa(val);
+                await processarRemessa(val);
             } else {
-                validarLote(val);
+                processarLote(val);
             }
         }
     });
 
-    async function buscarRemessa(codigo) {
-        banner.innerText = "BUSCANDO REMESSA...";
+    async function processarRemessa(codigo) {
+        banner.innerText = "PROCESSANDO...";
         try {
             const r = await fetch(`${API}/validar_remessa_manual/${codigo}`);
             const res = await r.json();
@@ -178,136 +121,103 @@
                 dadosCarga = res.dados;
                 progressoLotes = {};
                 
-                // Inicializa contadores
-                Object.keys(dadosCarga.lotes).forEach(l => progressoLotes[l] = 0);
-
                 // Preenche UI
+                document.getElementById('v-carga').innerText = dadosCarga.info_adicional.carga;
                 document.getElementById('v-rem').innerText = dadosCarga.remessa;
-                document.getElementById('v-carga-nf').innerText = `${dadosCarga.info_adicional.carga} / NF: ${dadosCarga.info_adicional.nf}`;
-                document.getElementById('v-meta').innerText = "BIPE O LOTE PARA INICIAR";
-                document.getElementById('label-modo').innerText = "CONFERINDO VOLUMES";
-                document.getElementById('area-lotes').style.display = "block";
                 document.getElementById('btn-fechar').disabled = false;
                 
                 modo = "LOTE";
-                input.placeholder = "BIPE O LOTE DO PRODUTO...";
-                banner.innerText = "REMESSA IDENTIFICADA!";
+                banner.innerText = "REMESSA VALIDADA!";
                 banner.style.background = "var(--success)";
                 document.getElementById('snd-ok').play();
-                renderizarLotes();
+                renderLotes();
             } else {
-                feedbackErro(res.mensagem);
+                banner.innerText = res.mensagem;
+                banner.style.background = "var(--danger)";
+                document.getElementById('snd-err').play();
             }
-        } catch (e) { feedbackErro("ERRO DE CONEXÃO COM SERVIDOR"); }
+        } catch (e) {
+            banner.innerText = "ERRO DE CONEXÃO";
+            banner.style.background = "var(--danger)";
+        }
     }
 
-    function validarLote(codigo) {
+    function processarLote(codigo) {
         let loteLido = "";
-
-        // Lógica de extração de lote (AI-01 ou AI-02)
         if (codigo.startsWith("01")) {
-            const tam = codigo.length;
-            if (tam === 48)      loteLido = codigo.substring(18, 28);
-            else if (tam === 47) loteLido = codigo.substring(18, 27);
-            else if (tam === 46) loteLido = codigo.substring(18, 26);
-            else if (tam === 45) loteLido = codigo.substring(18, 25);
-            else if (tam === 44) loteLido = codigo.substring(18, 24);
-            else if (tam === 43) loteLido = codigo.substring(18, 23);
+            loteLido = codigo.substring(18, 28);
         } else if (codigo.startsWith("02")) {
             const match = codigo.match(/#17(.*?)#10/);
             if (match) loteLido = match[1];
         }
 
-        if (!loteLido || !dadosCarga.lotes[loteLido]) {
-            feedbackErro("LOTE NÃO PERTENCE A ESTA REMESSA");
-            return;
-        }
-
-        const info = dadosCarga.lotes[loteLido];
-        
-        // Atualiza campos de Produto/Descrição
-        document.getElementById('v-meta').innerText = `${info.produto} - ${info.descricao}`;
-
-        if (progressoLotes[loteLido] < info.qtd_total) {
-            progressoLotes[loteLido]++;
-            banner.innerText = `LOTE ${loteLido} OK!`;
-            banner.style.background = "var(--success)";
-            document.getElementById('snd-ok').play();
-            renderizarLotes();
-            checarFinalizacao();
+        if (loteLido && dadosCarga.lotes[loteLido]) {
+            const info = dadosCarga.lotes[loteLido];
+            if ((progressoLotes[loteLido] || 0) < info.qtd_total) {
+                progressoLotes[loteLido] = (progressoLotes[loteLido] || 0) + 1;
+                banner.innerText = `LOTE ${loteLido} BIPADO!`;
+                banner.style.background = "var(--success)";
+                document.getElementById('snd-ok').play();
+                renderLotes();
+            } else {
+                banner.innerText = "LOTE JÁ CONCLUÍDO!";
+                banner.style.background = "#f39c12";
+                document.getElementById('snd-err').play();
+            }
         } else {
-            feedbackErro("LOTE JÁ CONCLUÍDO!");
+            banner.innerText = "LOTE NÃO PERTENCE A ESTA REMESSA!";
+            banner.style.background = "var(--danger)";
+            document.getElementById('snd-err').play();
         }
     }
 
-    function renderizarLotes() {
-        const lista = document.getElementById('lista-lotes-status');
+    function renderLotes() {
+        const lista = document.getElementById('lista-lotes');
         lista.innerHTML = "";
-
         for (const [lote, info] of Object.entries(dadosCarga.lotes)) {
-            const atual = progressoLotes[lote];
-            const total = info.qtd_total;
-            const isDone = atual >= total;
-            
+            const atual = progressoLotes[lote] || 0;
+            const concluido = atual >= info.qtd_total;
             lista.innerHTML += `
-                <div class="lote-item ${isDone ? 'concluido' : ''}">
+                <div class="lote-item ${concluido ? 'concluido' : ''}">
                     <div class="lote-info">
                         <strong>LOTE: ${lote}</strong>
                         <small>${info.descricao}</small>
                     </div>
-                    <div class="lote-qtd">${atual} / ${total} <small>CX</small></div>
-                </div>
-            `;
-        }
-    }
-
-    function checarFinalizacao() {
-        const concluido = Object.keys(dadosCarga.lotes).every(l => progressoLotes[l] >= dadosCarga.lotes[l].qtd_total);
-        if (concluido) {
-            banner.innerText = "REMESSA 100% CONCLUÍDA!";
-            banner.style.background = "var(--finalizado)";
-            // Não recarrega automático para permitir clicar no botão de fechar pallet se necessário
+                    <strong>${atual} / ${info.qtd_total} CX</strong>
+                </div>`;
         }
     }
 
     async function fecharPallet() {
         if (!dadosCarga) return;
         
-        if (!confirm(`Deseja gerar o ID de Pallet para a carga ${dadosCarga.info_adicional.carga}?`)) return;
-
         try {
+            // Enviando o objeto completo para evitar erro 422
             const res = await fetch(`${API}/fechar-pallet`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ carga: dadosCarga.info_adicional.carga })
+                body: JSON.stringify({
+                    id_pallet: "AUTO",
+                    carga: String(dadosCarga.info_adicional.carga),
+                    cliente: "-",
+                    destino: "-",
+                    quantidade: 0,
+                    qtd_remessas: 0,
+                    remessas_lista: ""
+                })
             });
             const data = await res.json();
 
             if (data.status === "ok") {
-                alert(`PALLET FECHADO COM SUCESSO!\nID: ${data.id_pallet}`);
+                alert(`PALLET FECHADO!\nID: ${data.id_pallet}`);
                 location.reload();
             } else {
-                alert("Erro: " + data.mensagem);
+                alert("Erro ao fechar: " + data.mensagem);
             }
-        } catch (e) { alert("Erro ao fechar pallet."); }
+        } catch (e) {
+            alert("Erro de comunicação com servidor.");
+        }
     }
-
-    function feedbackErro(msg) {
-        banner.innerText = msg;
-        banner.style.background = "var(--danger)";
-        document.getElementById('snd-err').play();
-    }
-
-    async function atualizarTotal() {
-        try {
-            const r = await fetch(`${API}/produtividade`);
-            const d = await r.json();
-            document.getElementById('total-sessao').innerText = `DIA: ${d.total}`;
-        } catch (e) {}
-    }
-
-    atualizarTotal();
-    setInterval(atualizarTotal, 30000); // Atualiza a cada 30s
 </script>
 </body>
 </html>
