@@ -17,7 +17,7 @@
             --finalizado: #2c3e50; 
         }
         body.dark-mode { --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; transition: 0.3s; overflow-x: hidden; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; transition: 0.3s; }
         
         header { background: var(--primary); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
 
@@ -38,15 +38,27 @@
         .info-row span { color: #888; font-size: 11px; font-weight: bold; text-transform: uppercase; }
         .info-row strong { font-size: 14px; color: var(--text); }
 
-        /* Área de Lotes */
-        #area-lotes { display: none; margin-top: 15px; border-top: 2px dashed #eee; padding-top: 10px; }
+        /* Painel de Lotes */
+        #area-lotes { 
+            display: none; 
+            margin-top: 15px; 
+            padding: 10px; 
+            background: rgba(0,0,0,0.02); 
+            border-radius: 8px;
+            border: 1px solid #eee;
+        }
+        .lote-header { font-size: 11px; font-weight: bold; color: var(--primary); margin-bottom: 10px; display: block; }
+        
         .lote-item {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 10px; background: rgba(0,0,0,0.03); border-radius: 8px; margin-bottom: 5px;
-            font-size: 14px; border-left: 4px solid var(--warning);
+            padding: 12px; background: var(--card); border-radius: 8px; margin-bottom: 8px;
+            font-size: 14px; border-left: 5px solid var(--warning);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
-        .lote-item.concluido { border-left-color: var(--success); background: rgba(39, 174, 96, 0.1); }
-        .lote-qtd { font-weight: bold; font-family: monospace; font-size: 16px; }
+        .lote-item.concluido { border-left-color: var(--success); opacity: 0.8; }
+        .lote-info { display: flex; flex-direction: column; }
+        .lote-info small { font-size: 10px; color: #999; }
+        .lote-qtd { font-weight: 800; font-size: 16px; color: var(--finalizado); }
 
         .input-group { position: relative; margin-top: 10px; }
         .input-bip {
@@ -59,14 +71,13 @@
         .btn-fechar-plt {
             width: 100%; padding: 18px; margin-top: 15px; border-radius: 12px; border: none;
             background: var(--finalizado); color: white; font-weight: bold; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.2s;
-            text-transform: uppercase; letter-spacing: 1px;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
         }
 
         .floating-count {
             position: fixed; bottom: 20px; right: 20px; background: var(--primary);
-            color: white; padding: 12px 20px; border-radius: 50px; display: flex;
-            align-items: center; gap: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); font-weight: bold;
+            color: white; padding: 12px 20px; border-radius: 50px; font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
     </style>
 </head>
@@ -75,22 +86,22 @@
 <header>
     <div style="display:flex; align-items:center; gap:10px;">
         <span class="material-icons" style="cursor:pointer" onclick="window.location.href='index.html'">arrow_back</span>
-        <strong>MENU</strong>
+        <strong>VOLTAR</strong>
     </div>
-    <span style="font-weight: bold; letter-spacing: 1px;">CONFERÊNCIA MANUAL | CD & LM</span>
+    <span style="font-weight: bold;">CONFERÊNCIA MANUAL</span>
     <span class="material-icons" style="cursor:pointer" onclick="toggleDark()">brightness_4</span>
 </header>
 
 <div class="container">
-    <div class="status-banner" id="status-display">AGUARDANDO REMESSA</div>
+    <div class="status-banner" id="status-display">BIPE A REMESSA</div>
 
     <div class="info-card">
         <div class="info-row">
-            <span>MODO ATUAL</span>
-            <strong id="label-modo" style="color: var(--primary);">BIPAR REMESSA</strong>
+            <span>MODO</span>
+            <strong id="label-modo" style="color: var(--primary);">AGUARDANDO...</strong>
         </div>
         <div class="info-row">
-            <span>Remessa SAP</span>
+            <span>Remessa</span>
             <strong id="v-rem">-</strong>
         </div>
         <div class="info-row">
@@ -98,140 +109,119 @@
             <strong id="v-meta">-</strong>
         </div>
 
-        <!-- LISTA DE LOTES DINÂMICA -->
+        <!-- VISÃO DOS LOTES -->
         <div id="area-lotes">
-            <span style="font-size: 10px; font-weight: bold; color: var(--primary); display: block; margin-bottom: 8px;">
-                CONTROLE DE LOTES DA REMESSA:
-            </span>
-            <div id="lista-lotes-status">
-                <!-- Inserido via JS -->
-            </div>
+            <span class="lote-header">LOTES PENDENTES NESTA REMESSA:</span>
+            <div id="lista-lotes-status"></div>
         </div>
     </div>
 
     <div class="input-group">
-        <input type="text" id="input-bip" class="input-bip" placeholder="BIPE A REMESSA..." autofocus autocomplete="off">
+        <input type="text" id="input-bip" class="input-bip" placeholder="AGUARDANDO LEITURA..." autofocus autocomplete="off">
     </div>
 
     <button class="btn-fechar-plt" onclick="gerarIdPallet()">
-        <span class="material-icons">inventory</span> FECHAR PALLET ATUAL
+        <span class="material-icons">inventory</span> ENCERRAR PALLET
     </button>
 </div>
 
 <div class="floating-count">
-    <span class="material-icons">query_stats</span>
-    <span id="total-sessao">TOTAL DIA: 0</span>
+    <span id="total-sessao">DIA: 0</span>
 </div>
 
-<!-- AUDIOS -->
 <audio id="snd-ok" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
 <audio id="snd-err" src="https://assets.mixkit.co/active_storage/sfx/2873/2873-preview.mp3"></audio>
 
 <script>
     const API = "http://127.0.0.1:8000";
-    let modoAtual = "REMESSA"; // REMESSA ou LOTE
-    let dadosRemessa = null;
-    let conferênciaLotes = {}; // { "LOTE123": qtd_bipada }
+    let modo = "REMESSA"; 
+    let dadosCarga = null;
+    let progressoLotes = {}; 
 
-    function toggleDark() {
-        document.getElementById('main-body').classList.toggle('dark-mode');
-    }
-
-    // Mantém o foco no input
+    function toggleDark() { document.getElementById('main-body').classList.toggle('dark-mode'); }
     document.addEventListener('click', () => document.getElementById('input-bip').focus());
 
-    const inputBip = document.getElementById('input-bip');
-    const display = document.getElementById('status-display');
+    const input = document.getElementById('input-bip');
+    const banner = document.getElementById('status-display');
 
-    inputBip.addEventListener('keypress', async function(e) {
+    input.addEventListener('keypress', async (e) => {
         if (e.key === 'Enter') {
-            const barcode = this.value.trim();
-            this.value = '';
+            const val = input.value.trim();
+            input.value = '';
+            if (!val) return;
 
-            if (!barcode) return;
-
-            if (modoAtual === "REMESSA") {
-                await processarRemessa(barcode);
+            if (modo === "REMESSA") {
+                await buscarRemessa(val);
             } else {
-                processarLote(barcode);
+                validarLote(val);
             }
         }
     });
 
-    async function processarRemessa(codigo) {
-        display.innerText = "VALIDANDO REMESSA...";
-        
+    async function buscarRemessa(codigo) {
+        banner.innerText = "BUSCANDO...";
         try {
-            // Chamada para a rota que busca no Espelho SAP.xlsx
             const r = await fetch(`${API}/validar_remessa_manual/${codigo}`);
             const res = await r.json();
 
             if (res.status === "sucesso") {
-                dadosRemessa = res.dados;
-                conferênciaLotes = {}; // Reseta conferência
+                dadosCarga = res.dados;
+                progressoLotes = {};
                 
-                // Inicializa contador zerado para cada lote da remessa
-                Object.keys(dadosRemessa.lotes).forEach(l => conferênciaLotes[l] = 0);
+                // Prepara o objeto de contagem para cada lote retornado do Excel
+                Object.keys(dadosCarga.lotes).forEach(l => progressoLotes[l] = 0);
 
-                // Atualiza UI
-                document.getElementById('v-rem').innerText = dadosRemessa.remessa;
-                document.getElementById('v-meta').innerText = `${dadosRemessa.carga} | ${dadosRemessa.cliente}`;
-                document.getElementById('label-modo').innerText = "BIPAR LOTES DO CLIENTE";
+                document.getElementById('v-rem').innerText = dadosCarga.remessa;
+                document.getElementById('v-meta').innerText = `${dadosCarga.carga} | ${dadosCarga.cliente}`;
+                document.getElementById('label-modo').innerText = "CONFERINDO LOTES";
                 document.getElementById('area-lotes').style.display = "block";
                 
-                modoAtual = "LOTE";
-                inputBip.placeholder = "BIPE O LOTE DO PRODUTO...";
-                
-                display.innerText = "REMESSA IDENTIFICADA";
-                display.style.background = "var(--success)";
+                modo = "LOTE";
+                input.placeholder = "BIPE O LOTE DO PRODUTO...";
+                banner.innerText = "REMESSA OK! BIPE LOTES";
+                banner.style.background = "var(--success)";
                 document.getElementById('snd-ok').play();
-                
                 renderizarLotes();
             } else {
-                feedbackErro(res.mensagem || "REMESSA NÃO ENCONTRADA");
+                feedbackErro(res.mensagem);
             }
-        } catch (err) {
-            feedbackErro("ERRO DE CONEXÃO COM API");
-        }
+        } catch (e) { feedbackErro("ERRO NA API"); }
     }
 
-    function processarLote(codigo) {
-        let loteExtraido = "";
+    function validarLote(codigo) {
+        let loteLido = "";
 
-        // Regra 1: Prefixo 01 (Lógica de 6 etapas por tamanho)
+        // Lógica de extração 01
         if (codigo.startsWith("01")) {
             const tam = codigo.length;
-            if (tam === 48)      loteExtraido = codigo.substring(18, 28);
-            else if (tam === 47) loteExtraido = codigo.substring(18, 27);
-            else if (tam === 46) loteExtraido = codigo.substring(18, 26);
-            else if (tam === 45) loteExtraido = codigo.substring(18, 25);
-            else if (tam === 44) loteExtraido = codigo.substring(18, 24);
-            else if (tam === 43) loteExtraido = codigo.substring(18, 23);
+            if (tam === 48) loteLido = codigo.substring(18, 28);
+            else if (tam === 47) loteLido = codigo.substring(18, 27);
+            else if (tam === 46) loteLido = codigo.substring(18, 26);
+            else if (tam === 45) loteLido = codigo.substring(18, 25);
+            else if (tam === 44) loteLido = codigo.substring(18, 24);
+            else if (tam === 43) loteLido = codigo.substring(18, 23);
         } 
-        // Regra 2: Prefixo 02 (Extração entre #17 e #10)
+        // Lógica de extração 02
         else if (codigo.startsWith("02")) {
             const match = codigo.match(/#17(.*?)#10/);
-            if (match) loteExtraido = match[1];
+            if (match) loteLido = match[1];
         }
 
-        // Validação do Lote Extraído
-        if (!loteExtraido || dadosRemessa.lotes[loteExtraido] === undefined) {
-            feedbackErro("LOTE NÃO PERTENCE A ESTA REMESSA");
+        if (!loteLido || progressoLotes[loteLido] === undefined) {
+            feedbackErro("LOTE INVÁLIDO OU NÃO PERTENCE À REMESSA");
             return;
         }
 
-        const qtdNecessaria = dadosRemessa.lotes[loteExtraido];
-        const qtdAtual = conferênciaLotes[loteExtraido];
-
-        if (qtdAtual < qtdNecessaria) {
-            conferênciaLotes[loteExtraido]++;
-            display.innerText = `LOTE ${loteExtraido} BIPADO!`;
-            display.style.background = "var(--success)";
+        const max = dadosCarga.lotes[loteLido];
+        if (progressoLotes[loteLido] < max) {
+            progressoLotes[loteLido]++;
+            banner.innerText = `LOTE ${loteLido} OK!`;
+            banner.style.background = "var(--success)";
             document.getElementById('snd-ok').play();
             renderizarLotes();
-            verificarConclusao();
+            checarFinalizacao();
         } else {
-            feedbackErro("ESTE LOTE JÁ ESTÁ COMPLETO");
+            feedbackErro("ESTE LOTE JÁ FOI CONCLUÍDO");
         }
     }
 
@@ -239,83 +229,65 @@
         const lista = document.getElementById('lista-lotes-status');
         lista.innerHTML = "";
 
-        for (const [lote, total] of Object.entries(dadosRemessa.lotes)) {
-            const bipados = conferênciaLotes[lote];
-            const isDone = bipados >= total;
+        for (const [lote, total] of Object.entries(dadosCarga.lotes)) {
+            const atual = progressoLotes[lote];
+            const isDone = atual >= total;
             
             lista.innerHTML += `
                 <div class="lote-item ${isDone ? 'concluido' : ''}">
-                    <span><strong style="color:var(--primary)">LOTE:</strong> ${lote}</span>
-                    <span class="lote-qtd">${bipados} / ${total}</span>
+                    <div class="lote-info">
+                        <strong>LOTE: ${lote}</strong>
+                        <small>${isDone ? 'CONCLUÍDO' : 'PENDENTE'}</small>
+                    </div>
+                    <div class="lote-qtd">${atual} / ${total}</div>
                 </div>
             `;
         }
     }
 
-    function verificarConclusao() {
-        const finalizouTudo = Object.keys(dadosRemessa.lotes).every(l => conferênciaLotes[l] >= dadosRemessa.lotes[l]);
-
-        if (finalizouTudo) {
-            display.innerText = "REMESSA 100% CONCLUÍDA!";
-            display.style.background = "var(--finalizado)";
-            
-            // Aguarda 2 segundos e reseta para próxima remessa
+    function checarFinalizacao() {
+        const concluido = Object.keys(dadosCarga.lotes).every(l => progressoLotes[l] >= dadosCarga.lotes[l]);
+        if (concluido) {
+            banner.innerText = "TODOS OS LOTES OK!";
+            banner.style.background = "var(--finalizado)";
             setTimeout(() => {
-                resetarParaNovaRemessa();
-            }, 2000);
+                modo = "REMESSA";
+                document.getElementById('area-lotes').style.display = "none";
+                document.getElementById('label-modo').innerText = "BIPAR REMESSA";
+                input.placeholder = "BIPE A PRÓXIMA REMESSA...";
+                banner.innerText = "PRÓXIMA REMESSA";
+                banner.style.background = "#34495e";
+            }, 3000);
         }
-    }
-
-    function resetarParaNovaRemessa() {
-        modoAtual = "REMESSA";
-        dadosRemessa = null;
-        document.getElementById('area-lotes').style.display = "none";
-        document.getElementById('v-rem').innerText = "-";
-        document.getElementById('v-meta').innerText = "-";
-        document.getElementById('label-modo').innerText = "BIPAR REMESSA";
-        inputBip.placeholder = "BIPE A PRÓXIMA REMESSA...";
-        display.innerText = "AGUARDANDO NOVA REMESSA";
-        display.style.background = "#34495e";
-        atualizarTotalSessao();
     }
 
     function feedbackErro(msg) {
-        display.innerText = msg;
-        display.style.background = "var(--danger)";
+        banner.innerText = msg;
+        banner.style.background = "var(--danger)";
         document.getElementById('snd-err').play();
     }
 
-    async function atualizarTotalSessao() {
+    async function gerarIdPallet() {
+        if (!dadosCarga) return alert("Bipe uma remessa primeiro.");
+        if (confirm("Fechar pallet agora?")) {
+            const r = await fetch(`${API}/fechar-pallet`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ carga: String(dadosCarga.carga), id_pallet: "AUTO" })
+            });
+            const res = await r.json();
+            if (res.status === "ok") { alert("Pallet: " + res.id_pallet); location.reload(); }
+        }
+    }
+
+    async function atualizarTotal() {
         try {
             const r = await fetch(`${API}/produtividade`);
             const d = await r.json();
-            document.getElementById('total-sessao').innerText = `TOTAL DIA: ${d.total}`;
+            document.getElementById('total-sessao').innerText = `DIA: ${d.total}`;
         } catch (e) {}
     }
-
-    async function gerarIdPallet() {
-        if (!dadosRemessa) {
-            alert("Nenhuma carga em andamento.");
-            return;
-        }
-        if (confirm("Deseja fechar o pallet atual?")) {
-            try {
-                const r = await fetch(`${API}/fechar-pallet`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ carga: String(dadosRemessa.carga), id_pallet: "AUTO" })
-                });
-                const res = await r.json();
-                if (res.status === "ok") {
-                    alert("Pallet Fechado: " + res.id_pallet);
-                    location.reload();
-                }
-            } catch (e) { alert("Erro ao fechar pallet."); }
-        }
-    }
-
-    atualizarTotalSessao();
+    atualizarTotal();
 </script>
-
 </body>
 </html>
