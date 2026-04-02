@@ -73,8 +73,10 @@
             width: 100%; padding: 18px; margin-top: 15px; border-radius: 12px; border: none;
             background: var(--finalizado); color: white; font-weight: bold; cursor: pointer;
             display: flex; align-items: center; justify-content: center; gap: 10px;
-            text-transform: uppercase;
+            text-transform: uppercase; transition: 0.2s;
         }
+        .btn-fechar-plt:hover { background: #1a252f; }
+        .btn-fechar-plt:disabled { background: #ccc; cursor: not-allowed; }
 
         .floating-count {
             position: fixed; bottom: 20px; right: 20px; background: var(--primary);
@@ -99,20 +101,24 @@
 
     <div class="info-card">
         <div class="info-row">
-            <span>MODO</span>
-            <strong id="label-modo" style="color: var(--primary);">AGUARDANDO...</strong>
+            <span>MODO ATUAL</span>
+            <strong id="label-modo" style="color: var(--primary);">AGUARDANDO LEITURA...</strong>
         </div>
         <div class="info-row">
             <span>Remessa SAP</span>
             <strong id="v-rem">-</strong>
         </div>
         <div class="info-row">
-            <span id="label-dinamico">PRODUTO</span>
+            <span>CARGA / NF</span>
+            <strong id="v-carga-nf">-</strong>
+        </div>
+        <div class="info-row">
+            <span id="label-dinamico">PRODUTO ATUAL</span>
             <strong id="v-meta">-</strong>
         </div>
 
         <div id="area-lotes">
-            <span class="lote-header">LOTES DA REMESSA (EM CAIXAS):</span>
+            <span class="lote-header">LOTES DA REMESSA (CONFERÊNCIA):</span>
             <div id="lista-lotes-status"></div>
         </div>
     </div>
@@ -121,8 +127,8 @@
         <input type="text" id="input-bip" class="input-bip" placeholder="AGUARDANDO LEITURA..." autofocus autocomplete="off">
     </div>
 
-    <button class="btn-fechar-plt" onclick="encerrarConferencia()">
-        <span class="material-icons">check_circle</span> FINALIZAR PROCESSO
+    <button class="btn-fechar-plt" id="btn-fechar" onclick="fecharPallet()" disabled>
+        <span class="material-icons">inventory_2</span> FECHAR PALLET (ID)
     </button>
 </div>
 
@@ -130,6 +136,7 @@
     <span id="total-sessao">DIA: 0</span>
 </div>
 
+<!-- Sons de Feedback -->
 <audio id="snd-ok" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
 <audio id="snd-err" src="https://assets.mixkit.co/active_storage/sfx/2873/2873-preview.mp3"></audio>
 
@@ -140,6 +147,8 @@
     let progressoLotes = {}; 
 
     function toggleDark() { document.getElementById('main-body').classList.toggle('dark-mode'); }
+    
+    // Foco automático no input
     document.addEventListener('click', () => document.getElementById('input-bip').focus());
 
     const input = document.getElementById('input-bip');
@@ -160,7 +169,7 @@
     });
 
     async function buscarRemessa(codigo) {
-        banner.innerText = "BUSCANDO...";
+        banner.innerText = "BUSCANDO REMESSA...";
         try {
             const r = await fetch(`${API}/validar_remessa_manual/${codigo}`);
             const res = await r.json();
@@ -169,28 +178,33 @@
                 dadosCarga = res.dados;
                 progressoLotes = {};
                 
+                // Inicializa contadores
                 Object.keys(dadosCarga.lotes).forEach(l => progressoLotes[l] = 0);
 
+                // Preenche UI
                 document.getElementById('v-rem').innerText = dadosCarga.remessa;
-                document.getElementById('v-meta').innerText = "BIPE O LOTE PARA IDENTIFICAR";
-                document.getElementById('label-modo').innerText = "CONFERINDO LOTES";
+                document.getElementById('v-carga-nf').innerText = `${dadosCarga.info_adicional.carga} / NF: ${dadosCarga.info_adicional.nf}`;
+                document.getElementById('v-meta').innerText = "BIPE O LOTE PARA INICIAR";
+                document.getElementById('label-modo').innerText = "CONFERINDO VOLUMES";
                 document.getElementById('area-lotes').style.display = "block";
+                document.getElementById('btn-fechar').disabled = false;
                 
                 modo = "LOTE";
                 input.placeholder = "BIPE O LOTE DO PRODUTO...";
-                banner.innerText = "REMESSA OK! BIPE LOTES";
+                banner.innerText = "REMESSA IDENTIFICADA!";
                 banner.style.background = "var(--success)";
                 document.getElementById('snd-ok').play();
                 renderizarLotes();
             } else {
                 feedbackErro(res.mensagem);
             }
-        } catch (e) { feedbackErro("ERRO DE CONEXÃO"); }
+        } catch (e) { feedbackErro("ERRO DE CONEXÃO COM SERVIDOR"); }
     }
 
     function validarLote(codigo) {
         let loteLido = "";
 
+        // Lógica de extração de lote (AI-01 ou AI-02)
         if (codigo.startsWith("01")) {
             const tam = codigo.length;
             if (tam === 48)      loteLido = codigo.substring(18, 28);
@@ -204,16 +218,15 @@
             if (match) loteLido = match[1];
         }
 
-        if (!loteLido || dadosCarga.lotes[loteLido] === undefined) {
-            feedbackErro("LOTE INVÁLIDO");
+        if (!loteLido || !dadosCarga.lotes[loteLido]) {
+            feedbackErro("LOTE NÃO PERTENCE A ESTA REMESSA");
             return;
         }
 
         const info = dadosCarga.lotes[loteLido];
         
         // Atualiza campos de Produto/Descrição
-        document.getElementById('label-dinamico').innerText = "PRODUTO | DESCRIÇÃO";
-        document.getElementById('v-meta').innerText = `${info.produto} | ${info.descricao}`;
+        document.getElementById('v-meta').innerText = `${info.produto} - ${info.descricao}`;
 
         if (progressoLotes[loteLido] < info.qtd_total) {
             progressoLotes[loteLido]++;
@@ -223,7 +236,7 @@
             renderizarLotes();
             checarFinalizacao();
         } else {
-            feedbackErro("LOTE JÁ CONCLUÍDO");
+            feedbackErro("LOTE JÁ CONCLUÍDO!");
         }
     }
 
@@ -253,20 +266,36 @@
         if (concluido) {
             banner.innerText = "REMESSA 100% CONCLUÍDA!";
             banner.style.background = "var(--finalizado)";
-            setTimeout(() => { location.reload(); }, 4000);
+            // Não recarrega automático para permitir clicar no botão de fechar pallet se necessário
         }
+    }
+
+    async function fecharPallet() {
+        if (!dadosCarga) return;
+        
+        if (!confirm(`Deseja gerar o ID de Pallet para a carga ${dadosCarga.info_adicional.carga}?`)) return;
+
+        try {
+            const res = await fetch(`${API}/fechar-pallet`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ carga: dadosCarga.info_adicional.carga })
+            });
+            const data = await res.json();
+
+            if (data.status === "ok") {
+                alert(`PALLET FECHADO COM SUCESSO!\nID: ${data.id_pallet}`);
+                location.reload();
+            } else {
+                alert("Erro: " + data.mensagem);
+            }
+        } catch (e) { alert("Erro ao fechar pallet."); }
     }
 
     function feedbackErro(msg) {
         banner.innerText = msg;
         banner.style.background = "var(--danger)";
         document.getElementById('snd-err').play();
-    }
-
-    function encerrarConferencia() {
-        if(confirm("Deseja resetar e iniciar nova remessa?")) {
-            location.reload();
-        }
     }
 
     async function atualizarTotal() {
@@ -276,7 +305,9 @@
             document.getElementById('total-sessao').innerText = `DIA: ${d.total}`;
         } catch (e) {}
     }
+
     atualizarTotal();
+    setInterval(atualizarTotal, 30000); // Atualiza a cada 30s
 </script>
 </body>
 </html>
