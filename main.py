@@ -1,10 +1,13 @@
 from email.message import EmailMessage
 import json
+import math
+import re
 import shutil
 import smtplib
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+import openpyxl
 import pandas as pd
 from datetime import datetime
 import win32print
@@ -30,10 +33,11 @@ app.add_middleware(
 PATH_BASE = r"C:\Users\smicael\ACHE LABORATORIOS FARMACEUTICOS SA\Sharepoint l Operações Logísticas - Carga direta\Gestão Entrega direta_Nova Versão_ 2025.xlsm"
 PATH_BASE_2 = r"C:\Users\smicael\ACHE LABORATORIOS FARMACEUTICOS SA\Sharepoint l Operações Logísticas - Last Mile\LAST MILE - PL-PE-LOG-00031.xlsm" 
 PATH_RELATORIO = r"C:\Users\smicael\ACHE LABORATORIOS FARMACEUTICOS SA\Sharepoint l Operações Logísticas - Carga direta\Base de dados\Relatorio_Bipagens.xlsx"
+PATH_ESPELHO_SAP = r"C:\Users\smicael\OneDrive - ACHE LABORATORIOS FARMACEUTICOS SA\Documentos\Carga Direta & Last Mile\Espelho SAP.xlsx"
 NOME_ABA = "NotasFiscais" 
 
 # --- CARREGAMENTO E ATUALIZAÇÃO AUTOMÁTICA ---
-print("Iniciando sistema de sincronização de bases...")
+print("Iniciando sistema...")
 df_memoria_1 = pd.DataFrame()
 df_memoria_2 = pd.DataFrame()
 
@@ -60,7 +64,7 @@ threading.Thread(target=atualizar_bases_loop, daemon=True).start()
 try:
     df_memoria_1 = pd.read_excel(PATH_BASE, engine='openpyxl', sheet_name=NOME_ABA)
     df_memoria_2 = pd.read_excel(PATH_BASE_2, engine='openpyxl', sheet_name=NOME_ABA)
-    print("Bases carregadas com sucesso!")
+    print("Carregamento realizado com sucesso!")
 except Exception as e:
     print(f"Erro ao carregar bases: {e}")
 
@@ -142,65 +146,218 @@ def get_val(res, cols_norm, possibilidades):
 
 # --- ROTAS PRINCIPAIS ---
 
-@app.post("/registrar_bip")
-async def registrar_bip(d: DadosBip):
+# --- CONTROLE DE SESSÃO GLOBAL ---
+session = {
+    "remessa_ativa": None,
+    "lotes": {},           # { "LOTE123": {"quantidade_esperada": 10, "quantidade_bipada": 0} }
+    "bipagens_unicas": set(), 
+    "dados_remessa": {}    
+}
+
+# Variáveis para cache das planilhas de consulta (Carga Direta / Last Mile)
+df_memoria_1 = pd.DataFrame()
+df_memoria_2 = pd.DataFrame()
+
+class DadosBip(BaseModel):
+    codigo: str
+    tipo_processo: str
+
+# --- FUNÇÕES DE APOIO ---
+
+def extrair_lote_produto(c: str) -> Optional[str]:
+    c = c.strip()
+    if c.startswith("01"):
+        tamanhos = {48: (18, 28), 47: (18, 27), 46: (18, 26), 45: (18, 25), 44: (18, 24), 43: (18, 23)}
+        idx = tamanhos.get(len(c))
+        return c[idx[0]:idx[1]] if idx else None
+    elif "17" in c and "10" in c:
+        try: return c.split("17")[1].split("10")[0]
+        except: return None
+    return None
+
+def get_lotes_sap(remessa: str):
     try:
-        codigo_limpo = str(d.codigo).strip()
-        if len(codigo_limpo) == 31:
-            remessa_extraida = codigo_limpo[12:20].strip()
-        else:
-            remessa_extraida = codigo_limpo[10:18].strip() if len(codigo_limpo) >= 18 else "S/R"
-
-        resultado = buscar_no_cache(df_memoria_1, remessa_extraida) or buscar_no_cache(df_memoria_2, remessa_extraida)
-
-        if not resultado:
-            return {"status": "erro", "dados": {"status": "REMESSA NÃO LOCALIZADA", "valido": False}}
-
-        res, cols_norm = resultado
-        carga_val = get_val(res, cols_norm, ["Carga", "Num Carga"])
-        nf_val = get_val(res, cols_norm, ["NF-e", "NF", "Nota Fiscal"])
-        cliente_val = get_val(res, cols_norm, ["Nome", "Cliente", "Razão Social"])
-        cidade_val = get_val(res, cols_norm, ["Cidade"])
-        regiao_val = get_val(res, cols_norm, ["Região", "Regiao"])
+        df = pd.read_excel(PATH_ESPELHO_SAP, engine='openpyxl')
+        filtro = df[df['Remessa'].astype(str).str.contains(remessa, na=False)]
+        if filtro.empty: return None
         
-        try: 
-            c_vol = cols_norm.get("vol")
-            vol_total_remessa = int(float(res[c_vol])) if c_vol and pd.notna(res[c_vol]) else 1
-        except: vol_total_remessa = 1
+        lotes_map = {}
+        for _, row in filtro.iterrows():
+            lote = str(row['Lote']).strip()
+            lotes_map[lote] = {
+                "quantidade_esperada": int(row['Quantidade']), 
+                "quantidade_bipada": 0
+            }
+        return lotes_map
+    except: return None
 
+def registrar_no_excel(linha: list):
+    try:
+        # Cabeçalhos exatos conforme sua imagem
+        colunas = [
+            "CodigoDeBarraCliente", "CodigoDeBarrasProduto", "Lote", "Remessa", 
+            "VolumeCliente", "VolumeProduto", "Status", "DataHora", "Carga", 
+            "Cliente", "NF", "Tipo de processo", "Cidade", "Regiao", 
+            "Paletizacao", "Endereço", "Expedição", "Doca"
+        ]
+        
         if not os.path.exists(PATH_RELATORIO):
-            pd.DataFrame(columns=["Codigo","Lote","Remessa","VolumeCli","VolumePr","Status","DataHora","Carga","Cliente","NF","Tipo","Cidade","Regiao","Paletizacao","Endereco","Doca"]).to_excel(PATH_RELATORIO, index=False)
+            pd.DataFrame(columns=colunas).to_excel(PATH_RELATORIO, index=False)
         
-        df_rel = pd.read_excel(PATH_RELATORIO, engine='openpyxl', dtype=str)
-        ja_bipado = df_rel[(df_rel.iloc[:, 0] == codigo_limpo) & (df_rel.iloc[:, 5] == "✔ Conferido")]
-        vol_lidos = len(df_rel[(df_rel.iloc[:, 2] == remessa_extraida) & (df_rel.iloc[:, 5] == "✔ Conferido")])
-
-        info_tela = {
-            "valido": True, "status": "CONFERIDO", "nf": nf_val,
-            "vol_bipados": vol_lidos + (0 if not ja_bipado.empty else 1),
-            "vol_total": vol_total_remessa, "carga_planilha": carga_val,
-            "cliente_planilha": cliente_val, "cidade": cidade_val, "regiao": regiao_val
-        }
-
-        if not ja_bipado.empty:
-            info_tela["status"] = "JÁ BIPADO"
-            return {"status": "duplicado", "remessa": remessa_extraida, "dados": info_tela}
-
         wb = load_workbook(PATH_RELATORIO)
         ws = wb.active
-        proxima_linha = 2
-        while ws.cell(row=proxima_linha, column=1).value is not None:
-            proxima_linha += 1
-            
-        agora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-        dados_linha = [codigo_limpo, "-", remessa_extraida, "-", "-", "✔ Conferido", agora, carga_val, cliente_val, nf_val, d.tipo_processo, cidade_val, regiao_val, ""]
-        
-        for col, valor in enumerate(dados_linha, start=1):
-            ws.cell(row=proxima_linha, column=col).value = valor
+        ws.append(linha)
         wb.save(PATH_RELATORIO)
-        return {"status": "sucesso", "remessa": remessa_extraida, "dados": info_tela}
+    except Exception as e:
+        print(f"Erro ao gravar no Excel: {e}")
+
+def buscar_dados_completos_auto(remessa_id):
+    # Tenta na Base 1 (Carga Direta)
+    res = buscar_no_cache(df_memoria_1, remessa_id)
+    if not res:
+        # Tenta na Base 2 (Last Mile)
+        res = buscar_no_cache(df_memoria_2, remessa_id)
+    
+    if res:
+        dados, cols = res
+        return {
+            "carga": get_val(dados, cols, ["carga", "numero da carga", "CARGA"]),
+            "nf": get_val(dados, cols, ["nf", "nota fiscal", "NF-e"]),
+            "cliente": get_val(dados, cols, ["cliente", "nome cliente", "NOME"]),
+            "cidade": get_val(dados, cols, ["cidade", "CIDADE"]),
+            "regiao": get_val(dados, cols, ["regiao", "uf", "REGIAO", "REGIÃO"])
+        }
+    return None
+
+# --- ROTA PRINCIPAL ---
+
+@app.post("/registrar_bip")
+async def registrar_bip(d: DadosBip):
+    global session
+    try:
+        codigo_limpo = d.codigo.strip()
+        lote_detectado = extrair_lote_produto(codigo_limpo)
+        
+        # --- FLUXO CLIENTE (ABERTURA DE REMESSA) ---
+        if not lote_detectado:
+            remessa_id = codigo_limpo[10:18] if len(codigo_limpo) == 29 else codigo_limpo[12:20]
+            
+            if session["remessa_ativa"] == remessa_id:
+                return {"status": "erro", "dados": {"status": "REMESSA JÁ ESTÁ ABERTA", "valido": False}}
+
+            if session["remessa_ativa"] and session["remessa_ativa"] != remessa_id:
+                pendente = sum(v["quantidade_esperada"] - v["quantidade_bipada"] for v in session["lotes"].values())
+                if pendente > 0:
+                    return {"status": "erro", "dados": {"status": f"FINALIZE A REMESSA {session['remessa_ativa']}", "valido": False}}
+
+            lotes = get_lotes_sap(remessa_id)
+            if not lotes:
+                return {"status": "erro", "dados": {"status": "REMESSA NÃO LOCALIZADA NO SAP", "valido": False}}
+
+            dados_planilha = buscar_dados_completos_auto(remessa_id)
+            if not dados_planilha:
+                 return {"status": "erro", "dados": {"status": "DADOS DE CARGA NÃO ENCONTRADOS", "valido": False}}
+
+            try:
+                divisor = int(codigo_limpo[-3:-1])
+                if divisor <= 0: divisor = 1
+            except: 
+                divisor = 1
+
+            for l in lotes:
+                lotes[l]["quantidade_esperada"] = math.ceil(lotes[l]["quantidade_esperada"] / divisor)
+
+            session["remessa_ativa"] = remessa_id
+            session["codigo_cliente_atual"] = codigo_limpo
+            session["lotes"] = lotes
+            session["dados_remessa"] = dados_planilha 
+            session["bipagens_unicas"].add(codigo_limpo)
+
+            return {
+                "status": "sucesso", 
+                "remessa": remessa_id,
+                "dados": {
+                    "status": "REMESSA INICIADA", 
+                    "valido": True, 
+                    "vol_bipados": 0,
+                    "vol_total": sum(v["quantidade_esperada"] for v in lotes.values()),
+                    "nf": session["dados_remessa"]["nf"], 
+                    "carga_planilha": session["dados_remessa"]["carga"],
+                    "cliente_planilha": session["dados_remessa"]["cliente"], 
+                    "lista_lotes": lotes
+                }
+            }
+        
+        # --- FLUXO PRODUTO (CONFERÊNCIA) ---
+        else:
+            if not session["remessa_ativa"]:
+                return {"status": "erro", "dados": {"status": "BIPE O CLIENTE PRIMEIRO", "valido": False}}
+
+            if codigo_limpo in session["bipagens_unicas"]:
+                return {"status": "duplicado", "dados": {
+                    "status": "JÁ BIPADO", 
+                    "valido": True, 
+                    "vol_bipados": sum(v["quantidade_bipada"] for v in session["lotes"].values()),
+                    "vol_total": sum(v["quantidade_esperada"] for v in session["lotes"].values()),
+                    "lista_lotes": session["lotes"]
+                }}
+
+            if lote_detectado in session["lotes"]:
+                info = session["lotes"][lote_detectado]
+                
+                if info["quantidade_bipada"] < info["quantidade_esperada"]:
+                    info["quantidade_bipada"] += 1
+                    session["bipagens_unicas"].add(codigo_limpo)
+                    
+                    agora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                    
+                    # AJUSTE AQUI: Monte a lista respeitando as colunas da sua planilha
+                    # Se 'Paletizacao' é a coluna O (15ª), ela deve ser o 15º elemento da lista.
+                    dados_linha = [
+                        session["codigo_cliente_atual"], # A
+                        codigo_limpo,                    # B
+                        lote_detectado,                  # C
+                        session["remessa_ativa"],        # D
+                        "-",                             # E
+                        "-",                             # F
+                        "✔ Conferido",                   # G
+                        agora,                           # H
+                        session["dados_remessa"]["carga"],   # I
+                        session["dados_remessa"]["cliente"], # J
+                        session["dados_remessa"]["nf"],      # K
+                        d.tipo_processo,                     # L
+                        session["dados_remessa"]["cidade"],  # M
+                        session["dados_remessa"]["regiao"],  # N
+                        "", # O (PALETIZACAO) - Fica vazio para ser preenchido no fechamento
+                        "", "", "", "" # P, Q, R, S...
+                    ]
+                    
+                    registrar_no_excel(dados_linha)
+                    
+                    total_bip = sum(v["quantidade_bipada"] for v in session["lotes"].values())
+                    total_est = sum(v["quantidade_esperada"] for v in session["lotes"].values())
+                    
+                    return {
+                        "status": "sucesso", 
+                        "remessa": session["remessa_ativa"],
+                        "dados": {
+                            "status": "CONFERIDO" if total_bip < total_est else "REMESSA COMPLETA",
+                            "valido": True, 
+                            "vol_bipados": total_bip, 
+                            "vol_total": total_est,
+                            "lista_lotes": session["lotes"], 
+                            "nf": session["dados_remessa"]["nf"],
+                            "carga_planilha": session["dados_remessa"]["carga"], 
+                            "cliente_planilha": session["dados_remessa"]["cliente"]
+                        }
+                    }
+                else:
+                    return {"status": "erro", "dados": {"status": f"LOTE {lote_detectado} ESGOTADO", "valido": False}}
+            
+            return {"status": "erro", "dados": {"status": "LOTE NÃO PERTENCE A ESTA REMESSA", "valido": False}}
 
     except Exception as e:
+        print(f"Erro Crítico: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/pallets-da-carga/{num_carga}")
@@ -335,80 +492,193 @@ async def armazenar_pallet(a: Armazenamento):
     try:
         wb = load_workbook(PATH_RELATORIO)
         ws = wb.active
+        
+        id_procurado = str(a.id_pallet).strip()
+        linhas_do_pallet = []
+        
+        # 1. Primeiro passo: Localizar todas as linhas desse pallet e checar se alguma já tem endereço
         for row in ws.iter_rows(min_row=2):
-            if str(row[13].value) == str(a.id_pallet):
-                row[14].value = a.endereco
+            if str(row[14].value).strip() == id_procurado:
+                # Se encontrar uma linha que já tenha valor na coluna P (índice 15)
+                if row[15].value and str(row[15].value).strip() != "":
+                    return {
+                        "status": "erro", 
+                        "message": f"O Pallet {id_procurado} já está endereçado na posição {row[15].value}!"
+                    }
+                linhas_do_pallet.append(row)
+
+        # 2. Segundo passo: Se não houver erro, mas a lista estiver vazia, o pallet não existe
+        if not linhas_do_pallet:
+            return {
+                "status": "erro", 
+                "message": "ID do Pallet não encontrado na base de dados."
+            }
+
+        # 3. Terceiro passo: Se passou pelos bloqueios, agora sim gravamos em TODAS as linhas
+        for row in linhas_do_pallet:
+            row[15].value = a.endereco
+
         wb.save(PATH_RELATORIO)
-        return {"status": "ok"}
-    except Exception as e: raise HTTPException(status_code=500, detail=str(e))
+        return {
+            "status": "sucesso", 
+            "message": f"Pallet {id_procurado} endereçado com sucesso em {len(linhas_do_pallet)} volumes!"
+        }
+
+    except Exception as e:
+        print(f"Erro ao armazen ar: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/expedir-pallet")
 async def expedir_pallet(e: Expedicao):
     try:
         wb = load_workbook(PATH_RELATORIO)
         ws = wb.active
+        
+        linhas_alteradas = 0
+        id_procurado = str(e.id_pallet).strip()
+
         for row in ws.iter_rows(min_row=2):
-            if str(row[13].value) == str(e.id_pallet):
-                row[16].value = e.doca 
+            # Coluna O (índice 14) - ID do Pallet
+            if str(row[14].value).strip() == id_procurado:
+                
+                # BLOQUEIO: Se já houver registro de doca na primeira linha, bloqueia
+                if linhas_alteradas == 0 and row[16].value and str(row[16].value).strip() != "":
+                    return {
+                        "status": "erro", 
+                        "message": f"Pallet já foi Expedido pela {row[16].value}"
+                    }
+                
+                # Registra a Doca na Coluna Q (índice 16)
+                row[16].value = e.doca
+                linhas_alteradas += 1
+
+        if linhas_alteradas == 0:
+            return {"status": "erro", "message": "PALLET NÃO LOCALIZADO PARA EXPEDIÇÃO"}
+
         wb.save(PATH_RELATORIO)
-        return {"status": "OK"}
-    except Exception as err: raise HTTPException(status_code=500, detail=str(err))
+        return {"status": "OK", "message": f"Expedição de {linhas_alteradas} itens confirmada!"}
+
+    except Exception as err:
+        raise HTTPException(status_code=500, detail=str(err))
+
+def gerar_proximo_id_pallet(numero_carga):
+    """Gera ID no formato: PLT12345 - 07042026 - 0001"""
+    data_formatada = datetime.now().strftime("%d%m%Y")
+    arquivo_contador = "contador_pallet.txt"
+    
+    # Lê o último número sequencial do arquivo
+    if os.path.exists(arquivo_contador):
+        with open(arquivo_contador, "r") as f:
+            try:
+                conteudo = f.read().strip()
+                ultimo_numero = int(conteudo) if conteudo else 0
+            except:
+                ultimo_numero = 0
+    else:
+        ultimo_numero = 0
+    
+    novo_numero = ultimo_numero + 1
+    
+    # Salva o novo número para a próxima consulta
+    with open(arquivo_contador, "w") as f:
+        f.write(str(novo_numero))
+    
+    sequencia = str(novo_numero).zfill(4)
+    return f"PLT{numero_carga} - {data_formatada} - {sequencia}"
+
+from pydantic import BaseModel, ConfigDict
+
+class PalletInfo(BaseModel):
+    # Usamos ConfigDict para que o FastAPI não trave se o front enviar campos extras por erro
+    model_config = ConfigDict(extra='ignore') 
+    
+    remessa_id: str
 
 @app.post("/fechar-pallet")
 async def fechar_pallet(p: PalletInfo):
+    global session
     try:
-        if not os.path.exists(PATH_RELATORIO):
-            raise HTTPException(status_code=404, detail="Relatório não encontrado")
+        remessa_id = session.get("remessa_ativa")
+        if not remessa_id:
+             return {"status": "erro", "message": "Nenhuma remessa ativa para fechar."}
 
-        wb = load_workbook(PATH_RELATORIO)
-        ws = wb.active
-        
-        # 1. Preparar a data com pontos (Ex: 25.03.2026)
-        data_atual = datetime.now().strftime("%d.%m.%Y")
-        prefixo_busca = f"PLT{p.carga} - {data_atual}"
-        
-        # 2. Ler o Excel para encontrar a última sequência
-        df = pd.read_excel(PATH_RELATORIO, engine='openpyxl', dtype=str)
-        
-        # Filtra IDs que contenham o prefixo (Carga + Data)
-        pallets_hoje = df[df.iloc[:, 13].astype(str).str.contains(prefixo_busca, na=False)]
-        ids_existentes = pallets_hoje.iloc[:, 13].unique()
-        
-        proxima_seq = 1
-        if len(ids_existentes) > 0:
-            sequencias = []
-            for id_plt in ids_existentes:
-                try:
-                    # Pega a parte após o último " - " (a sequência 0001)
-                    partes = str(id_plt).split(' - ')
-                    if len(partes) >= 3:
-                        sequencias.append(int(partes[2]))
-                except:
-                    continue
-            if sequencias:
-                proxima_seq = max(sequencias) + 1
+        # 1. Recupera a carga e gera o ID baseado no Excel
+        carga = session["dados_remessa"].get("carga", "0000")
+        id_final = obter_proximo_id_excel(carga)
 
-        # 3. Montar o ID final: PLT506 - 25.03.2026 - 0001
-        id_final_formatado = f"PLT{p.carga} - {data_atual} - {str(proxima_seq).zfill(4)}"
-        
-        # 4. Gravar no Excel (Coluna 14 / Índice 13)
-        gravou = False
-        for row in ws.iter_rows(min_row=2):
-            val_carga = str(row[7].value).strip()
-            val_pallet = str(row[13].value).strip() if row[13].value else ""
-            
-            if val_carga == str(p.carga).strip() and (val_pallet == "" or val_pallet.lower() == "nan"):
-                row[13].value = id_final_formatado
-                gravou = True
-        
-        if not gravou:
-            return {"status": "erro", "mensagem": "Nenhum volume pendente nesta carga."}
+        # 2. Carimba esse ID em todas as linhas daquela remessa na planilha
+        sucesso = carimbar_id_pallet_na_planilha(remessa_id, id_final)
 
-        wb.save(PATH_RELATORIO)
-        return {"status": "ok", "id_pallet": id_final_formatado}
+        # 3. Limpa a sessão para o próximo trabalho
+        session = {
+            "remessa_ativa": None,
+            "codigo_cliente_atual": None,
+            "lotes": {},
+            "bipagens_unicas": set(),
+            "dados_remessa": {}
+        }
+
+        return {"status": "sucesso", "id_pallet": id_final, "gravado": sucesso}
 
     except Exception as e:
+        print(f"Erro ao fechar pallet: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+def obter_proximo_id_excel(numero_carga):
+    """Lê a planilha e define o próximo ID baseado no que já existe lá"""
+    data_hoje = datetime.now().strftime("%d%m%Y")
+    ultimo_numero = 0
+    
+    if os.path.exists(PATH_RELATORIO):
+        try:
+            wb = openpyxl.load_workbook(PATH_RELATORIO, data_only=True)
+            ws = wb.active
+            col_pallet = 15 # Coluna O
+            
+            # Varre as últimas 100 linhas (ou todas) para achar o último ID da carga
+            for row in range(ws.max_row, 1, -1):
+                valor = ws.cell(row=row, column=col_pallet).value
+                if valor and str(valor).startswith(f"PLT{numero_carga}"):
+                    # Extrai os números do final do ID (ex: 0002 -> 2)
+                    match = re.search(r"(\d+)$", str(valor))
+                    if match:
+                        ultimo_numero = int(match.group(1))
+                        break
+            wb.close()
+        except Exception as e:
+            print(f"Erro ao ler sequência: {e}")
+
+    novo_numero = ultimo_numero + 1
+    sequencia = str(novo_numero).zfill(4)
+    return f"PLT{numero_carga} - {data_hoje} - {sequencia}"
+
+def carimbar_id_pallet_na_planilha(remessa_id, id_pallet):
+    """Procura as linhas da remessa na planilha e grava o ID do Pallet nelas"""
+    if not os.path.exists(PATH_RELATORIO):
+        return False
+
+    try:
+        wb = openpyxl.load_workbook(PATH_RELATORIO)
+        ws = wb.active
+        col_remessa = 4  # Coluna D
+        col_pallet = 15  # Coluna O
+        teve_alteracao = False
+
+        for row in range(2, ws.max_row + 1):
+            # Se a remessa bater e a célula do pallet estiver vazia
+            if str(ws.cell(row=row, column=col_remessa).value) == str(remessa_id):
+                celula_pallet = ws.cell(row=row, column=col_pallet)
+                if not celula_pallet.value:
+                    celula_pallet.value = id_pallet
+                    teve_alteracao = True
+
+        if teve_alteracao:
+            wb.save(PATH_RELATORIO)
+        wb.close()
+        return teve_alteracao
+    except Exception as e:
+        print(f"Erro ao carimbar pallet: {e}")
+        return False
 
 @app.get("/produtividade")
 async def produtividade():
