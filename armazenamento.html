@@ -88,11 +88,9 @@
 <script>
     const API = "http://127.0.0.1:8000";
 
-    // Atalho Enter para Armazenamento
+    // Atalhos Enter
     document.getElementById('arm-plt').addEventListener('keypress', (e) => { if(e.key === 'Enter') document.getElementById('arm-pos').focus(); });
     document.getElementById('arm-pos').addEventListener('keypress', (e) => { if(e.key === 'Enter') executarArmazenamento(); });
-
-    // Atalho Enter para Expedição
     document.getElementById('exp-plt').addEventListener('keypress', (e) => { if(e.key === 'Enter') abrirModalDoca(); });
 
     async function executarArmazenamento() {
@@ -106,13 +104,22 @@
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ id_pallet: plt, endereco: pos })
             });
-            if(res.ok) {
-                alert("Pallet " + plt + " endereçado!");
+
+            const dados = await res.json(); // LÊ A RESPOSTA DO BACK-END
+
+            if (dados.status === "sucesso") {
+                alert(dados.message); // Exibe: "Pallet PLT... endereçado com sucesso!"
                 document.getElementById('arm-plt').value = "";
                 document.getElementById('arm-pos').value = "";
                 document.getElementById('arm-plt').focus();
+            } else {
+                // EXIBE O BLOQUEIO: "O Pallet PLT... já está endereçado..."
+                alert("ATENÇÃO: " + dados.message); 
             }
-        } catch(e) { alert("Erro ao conectar na API"); }
+
+        } catch(e) { 
+            alert("Erro ao conectar na API"); 
+        }
     }
 
     function abrirModalDoca() {
@@ -130,11 +137,19 @@
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ id_pallet: plt, doca: doca })
             });
-            if(res.ok) {
-                alert("Pallet " + plt + " expedido com sucesso!");
+
+            const dados = await res.json(); // LÊ A RESPOSTA DO BACK-END
+
+            if (dados.status === "OK" || dados.status === "sucesso") {
+                alert(dados.message || "Pallet expedido com sucesso!");
                 location.reload();
+            } else {
+                // EXIBE O BLOQUEIO: "PALLET JÁ FOI EXPEDIDO PELA DOCA..."
+                alert("ERRO: " + dados.message);
             }
-        } catch(e) { alert("Erro na expedição"); }
+        } catch(e) { 
+            alert("Erro na expedição"); 
+        }
     }
 </script>
 </body>
